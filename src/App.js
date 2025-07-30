@@ -1,43 +1,66 @@
-import React, { useState } from "react";
+// src/App.js
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { Button } from "./components/ui/button";
-import { Card } from "./components/ui/card";
-import { Carousel } from "./components/ui/carousel";
-import { Switch } from "./components/ui/switch";
-import { Camera, Instagram, X, HelpCircle, Sun, Moon } from "lucide-react";
+import { Camera, Instagram, X, Sun, Moon } from "lucide-react";
 import { WhatsappLogo } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import Webcam from "react-webcam";
+import { auth } from "./lib/firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
-// --- Hero Section ---
+// ===== Hero Section with Slideshow =====
+function Slideshow() {
+  const images = ["/img/slide1.jpg", "/img/slide2.jpg", "/img/slide3.jpg"];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <motion.div
+      className="flex-1 flex items-center justify-center rounded-xl overflow-hidden shadow-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+    >
+      <motion.img
+        key={index}
+        src={images[index]}
+        alt="Slideshow"
+        className="w-96 h-64 object-cover rounded-xl"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      />
+    </motion.div>
+  );
+}
+
 function Hero({ onStart }) {
   return (
-    <section className="flex flex-col md:flex-row items-center justify-between px-8 py-16 bg-gradient-to-br from-indigo-500 via-blue-400 to-purple-300 rounded-3xl shadow-xl mb-8">
+    <section className="backdrop-blur-lg bg-white/10 border border-white/20 flex flex-col md:flex-row items-center justify-between px-8 py-16 rounded-3xl shadow-xl mb-8">
       <div className="flex-1">
         <h1 className="text-5xl font-extrabold text-white mb-4">Snap. Smile. Share.</h1>
         <p className="text-lg text-white/80 mb-6">
           The fun, fast, and friendly way to capture and share your best moments. Try filters, frames, and share instantly!
         </p>
-        <Button size="lg" onClick={onStart} className="bg-white text-indigo-600 font-bold rounded-full px-8 py-3 shadow-lg hover:bg-indigo-100 transition">
+        <Button size="lg" onClick={onStart} className="bg-white/80 text-indigo-700 font-bold rounded-full px-8 py-3 shadow-lg hover:bg-white">
           Start Photobooth
         </Button>
       </div>
-      <motion.div
-        className="flex-1 flex items-center justify-center"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        <Camera className="w-32 h-32 text-white drop-shadow-lg" />
-      </motion.div>
+      <Slideshow />
     </section>
   );
 }
 
-// --- Countdown ---
+// ===== Countdown Overlay =====
 function Countdown({ seconds = 3, onComplete }) {
   const [count, setCount] = useState(seconds);
-  React.useEffect(() => {
+  useEffect(() => {
     if (count > 0) {
       const timer = setTimeout(() => setCount(count - 1), 700);
       return () => clearTimeout(timer);
@@ -46,14 +69,10 @@ function Countdown({ seconds = 3, onComplete }) {
     }
   }, [count, onComplete]);
   return (
-    <motion.div
-      className="fixed inset-0 flex items-center justify-center bg-black/60 z-50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
+    <motion.div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/60 z-50">
       <motion.span
         key={count}
-        className="text-8xl font-extrabold text-white"
+        className="text-8xl font-extrabold text-white drop-shadow-lg"
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.5, opacity: 0 }}
@@ -65,191 +84,144 @@ function Countdown({ seconds = 3, onComplete }) {
   );
 }
 
-// --- Camera Preview ---
-function CameraPreview({ onCapture, filter }) {
-  const webcamRef = React.useRef(null);
-  const [captured, setCaptured] = useState(null);
-  const [showCountdown, setShowCountdown] = useState(false);
-  const [countdownSeconds, setCountdownSeconds] = useState(3);
-
-  const capture = () => {
-    const imageSrc = webcamRef.current.getScreenshot();
-    setCaptured(imageSrc);
-  };
-
-  // Handler for the Capture button
-  const handleCaptureClick = () => {
-    setShowCountdown(true);
-  };
-
-  // When countdown completes, take the picture
-  const handleCountdownComplete = () => {
-    setShowCountdown(false);
-    capture();
-  };
-
-  return (
-    <Card className="p-6 flex flex-col items-center bg-white rounded-2xl shadow-lg">
-      {/* Countdown seconds selector */}
-      {!captured && !showCountdown && (
-        <div className="mb-4 flex items-center gap-2">
-          <span className="font-semibold">Timer:</span>
-          <select
-            value={countdownSeconds}
-            onChange={e => setCountdownSeconds(Number(e.target.value))}
-            className="border rounded px-2 py-1"
-          >
-            <option value={3}>3s</option>
-            <option value={5}>5s</option>
-            <option value={10}>10s</option>
-          </select>
-        </div>
-      )}
-      {showCountdown && <Countdown seconds={countdownSeconds} onComplete={handleCountdownComplete} />}
-      {!captured && !showCountdown ? (
-        <>
-          <Webcam
-            audio={false}
-            ref={webcamRef}
-            screenshotFormat="image/jpeg"
-            className={`rounded-xl shadow-lg ${filter}`}
-            width={320}
-            height={240}
-          />
-          <Button className="mt-6" onClick={handleCaptureClick}>
-            Capture
-          </Button>
-        </>
-      ) : captured ? (
-        <>
-          <img src={captured} alt="Captured" className={`rounded-xl shadow-lg ${filter}`} width={320} height={240} />
-          <div className="flex gap-4 mt-6">
-            <Button variant="outline" onClick={() => setCaptured(null)}>
-              Retake
-            </Button>
-            <Button onClick={() => onCapture(captured)}>
-              Use Photo
-            </Button>
-          </div>
-        </>
-      ) : null}
-    </Card>
-  );
-}
-
-// --- Filters & Frames Carousel ---
-function FiltersCarousel({ selected, onSelect }) {
-  const filters = [
-    { name: "None", class: "" },
-    { name: "Sepia", class: "filter sepia" },
-    { name: "B&W", class: "filter grayscale" },
-    { name: "Vibrant", class: "filter saturate-200" },
-    { name: "Birthday", class: "border-4 border-pink-400" },
-    { name: "Travel", class: "border-4 border-blue-400" },
+// ===== Feature Section =====
+function Features() {
+  const features = [
+    { title: "Live Filters", desc: "Real-time filters and effects.", icon: <Camera className="text-indigo-500" /> },
+    { title: "Instant Share", desc: "Post to social media in one tap.", icon: <Instagram className="text-pink-500" /> },
+    { title: "Cloud Gallery", desc: "Securely store your memories.", icon: <X className="text-blue-400" /> },
   ];
   return (
-    <Carousel className="w-full flex gap-4 py-4 overflow-x-auto">
-      {filters.map((f) => (
-        <Card
-          key={f.name}
-          className={`p-2 rounded-xl cursor-pointer transition border-2 ${selected === f.class ? "border-indigo-500" : "border-transparent"}`}
-          onClick={() => onSelect(f.class)}
+    <section className="my-16 px-6 grid md:grid-cols-3 gap-8">
+      {features.map((feat, idx) => (
+        <motion.div
+          key={idx}
+          className="bg-white/10 p-6 rounded-2xl backdrop-blur shadow-md"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: idx * 0.2 }}
         >
-          <div className={`w-16 h-16 bg-gray-200 rounded-lg ${f.class}`}></div>
-          <div className="text-xs text-center mt-2">{f.name}</div>
-        </Card>
+          <div className="mb-4">{feat.icon}</div>
+          <h3 className="text-xl font-bold">{feat.title}</h3>
+          <p className="text-white/70">{feat.desc}</p>
+        </motion.div>
       ))}
-    </Carousel>
+    </section>
   );
 }
 
-// --- Timeline / How it Works ---
-function Timeline() {
-  const steps = [
-    { icon: <Camera />, title: "Allow Camera Access" },
-    { icon: <Camera />, title: "Capture Image" },
-    { icon: <Instagram />, title: "Apply Filter / Frame" },
-    { icon: <X />, title: "Save / Share" },
+// ===== Testimonials =====
+function Testimonials() {
+  const testimonials = [
+    { name: "Jane Doe", feedback: "Such a fun experience! Love the filters!" },
+    { name: "Mike Smith", feedback: "Perfect for parties and events!" },
+    { name: "Lisa Ray", feedback: "ClickTales made our wedding extra special." },
   ];
   return (
-    <section className="my-8">
-      <h2 className="text-2xl font-bold mb-4 text-indigo-700">How it Works</h2>
-      <div className="flex flex-col md:flex-row gap-6">
-        {steps.map((step, idx) => (
-          <Card key={idx} className="flex items-center gap-4 p-4 rounded-xl shadow-md bg-white">
-            <div className="bg-indigo-100 p-2 rounded-full">{step.icon}</div>
-            <span className="font-semibold">{step.title}</span>
-          </Card>
+    <section className="my-16 px-6 text-center">
+      <h2 className="text-3xl font-extrabold mb-8">What people say</h2>
+      <div className="grid md:grid-cols-3 gap-6">
+        {testimonials.map((t, i) => (
+          <motion.div
+            key={i}
+            className="bg-white/10 p-6 rounded-xl backdrop-blur shadow-lg"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: i * 0.1 }}
+          >
+            <p className="text-white/80 italic">"{t.feedback}"</p>
+            <p className="mt-4 font-bold">{t.name}</p>
+          </motion.div>
         ))}
       </div>
     </section>
   );
 }
 
-// --- Gallery ---
-function Gallery({ images }) {
+// ===== CTA Section =====
+function CallToAction() {
   return (
-    <section className="my-8">
-      <h2 className="text-2xl font-bold mb-4 text-indigo-700">Your Photos</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {images.map((img, idx) => (
-          <Card key={idx} className="relative rounded-xl overflow-hidden shadow-lg">
-            <img src={img} alt={`Captured ${idx}`} className="w-full h-32 object-cover" />
-            <div className="absolute bottom-2 right-2 flex gap-2">
-              <Button size="sm" variant="ghost">
-                <Instagram className="w-5 h-5" />
-              </Button>
-              <Button size="sm" variant="ghost">
-                <WhatsappLogo className="w-5 h-5" />
-              </Button>
-              <Button size="sm" variant="ghost">
-                <X className="w-5 h-5" />
-              </Button>
-              <Button size="sm" variant="ghost" as="a" href={img} download>
-                Download
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+    <section className="my-20 px-6 text-center bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-12 rounded-3xl shadow-xl text-white">
+      <h2 className="text-3xl font-extrabold mb-4">Ready to Capture the Moment?</h2>
+      <p className="mb-6 text-white/90">Try ClickTales now and experience the magic!</p>
+      <Button className="bg-white text-indigo-700 font-bold px-6 py-3 rounded-full shadow-lg hover:bg-white/90">
+        Get Started
+      </Button>
     </section>
   );
 }
 
-// --- Progress Bar / Loader ---
-function Loader({ loading }) {
-  return loading ? (
-    <motion.div
-      className="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-pink-400 to-purple-400"
-      initial={{ width: 0 }}
-      animate={{ width: "100%" }}
-      transition={{ duration: 1.2, repeat: Infinity, repeatType: "reverse" }}
-    />
-  ) : null;
+// ===== HomePage =====
+function HomePage({ dark, setDark }) {
+  const [startBooth, setStartBooth] = useState(false);
+  const handleStart = () => {
+    setStartBooth(true);
+    setTimeout(() => setStartBooth(false), 3000);
+  };
+
+  return (
+    <>
+      {startBooth && <Countdown onComplete={() => alert("Photo Taken!")} />}
+      <Hero onStart={handleStart} />
+      <Features />
+      <Testimonials />
+      <CallToAction />
+    </>
+  );
 }
 
-// --- Floating Action Button ---
-function FAB({ onClick, tooltip }) {
+// ===== Placeholder Pages =====
+const GalleryPage = () => <div className="text-white text-center">Gallery coming soon!</div>;
+const AboutPage = () => <div className="text-white text-center">About us content coming soon!</div>;
+
+// ===== Layout =====
+function Layout({ children, dark, setDark, user, onLogout }) {
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <motion.button
-        whileHover={{ scale: 1.15 }}
-        whileTap={{ scale: 0.95 }}
-        className="bg-indigo-600 text-white rounded-full p-4 shadow-lg flex items-center"
-        onClick={onClick}
-        aria-label={tooltip}
-      >
-        <HelpCircle className="w-6 h-6" />
-      </motion.button>
-      <span className="absolute bottom-16 right-0 bg-black text-white text-xs rounded px-2 py-1">{tooltip}</span>
+    <div className={`dark bg-gray-900 text-white min-h-screen flex flex-col transition-colors duration-500`}>
+      <header className="w-full backdrop-blur-sm bg-white/10 border-b border-white/20 text-white py-4 px-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Camera className="w-6 h-6" />
+          <span className="font-bold text-lg">ClickTales</span>
+        </div>
+        <nav className="flex gap-6 items-center">
+          <Link to="/" className="hover:underline">Home</Link>
+          <Link to="/gallery" className="hover:underline">Gallery</Link>
+          <Link to="/about" className="hover:underline">About</Link>
+          {user && (
+            <button onClick={onLogout} className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded-full">
+              Logout
+            </button>
+          )}
+          <DarkModeToggle dark={dark} setDark={setDark} />
+        </nav>
+      </header>
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-8 transition-all duration-500 ease-in-out">
+        {children}
+      </main>
+      <Footer />
     </div>
   );
 }
 
-// --- Footer ---
+// ===== Dark Mode Toggle =====
+function DarkModeToggle({ dark, setDark }) {
+  return (
+    <button
+      onClick={() => setDark(!dark)}
+      className="ml-4 flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-full px-3 py-1 transition"
+      aria-label="Toggle dark mode"
+    >
+      {dark ? <Moon className="text-yellow-300" /> : <Sun className="text-yellow-400" />}
+      <span className="text-sm">{dark ? "Dark" : "Light"}</span>
+    </button>
+  );
+}
+
+// ===== Footer =====
 function Footer() {
   return (
-    <footer className="mt-16 py-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-3xl shadow-lg flex flex-col md:flex-row items-center justify-between px-8">
+    <footer className="mt-16 py-8 backdrop-blur-lg bg-white/10 text-white rounded-t-3xl shadow-inner flex flex-col md:flex-row items-center justify-between px-8">
       <div className="flex items-center gap-2">
         <Camera className="w-6 h-6" />
         <span className="font-bold text-lg">ClickTales</span>
@@ -265,56 +237,38 @@ function Footer() {
           <X />
         </a>
       </div>
-      <div className="mt-4 md:mt-0">
+      <div className="mt-4 md:mt-0 text-sm">
         &copy; {new Date().getFullYear()} ClickTales. All rights reserved.
       </div>
     </footer>
   );
 }
 
-// --- Dark Mode Toggle ---
-function DarkModeToggle({ dark, setDark }) {
-  return (
-    <button
-      onClick={() => setDark(!dark)}
-      className="ml-4 flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-full px-3 py-1 transition"
-      aria-label="Toggle dark mode"
-    >
-      {dark ? <Moon className="text-yellow-300" /> : <Sun className="text-yellow-400" />}
-      <span className="text-sm">{dark ? "Dark" : "Light"}</span>
-    </button>
-  );
-}
-
-// --- Layout ---
-function Layout({ children, dark, setDark }) {
-  return (
-    <div className={`${dark ? "dark bg-gray-900 text-white" : "bg-gray-50 text-gray-900"} min-h-screen flex flex-col transition-colors duration-500`}>
-      <header className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Camera className="w-6 h-6" />
-          <span className="font-bold text-lg">ClickTales</span>
-        </div>
-        <nav className="flex gap-6 items-center">
-          <Link to="/" className="hover:underline">Home</Link>
-          <Link to="/gallery" className="hover:underline">Gallery</Link>
-          <Link to="/about" className="hover:underline">About</Link>
-          <DarkModeToggle dark={dark} setDark={setDark} />
-        </nav>
-      </header>
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-8">{children}</main>
-      <Footer />
-    </div>
-  );
-}
-
-// --- Main App ---
+// ===== Main App =====
 function App() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true); // 🌑 Dark mode by default
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      console.log("Auth state changed:", currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      console.log("User signed out");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <Router>
-      <Layout dark={dark} setDark={setDark}>
+      <Layout dark={dark} setDark={setDark} user={user} onLogout={handleLogout}>
         <Routes>
           <Route path="/" element={<HomePage dark={dark} setDark={setDark} />} />
           <Route path="/gallery" element={<GalleryPage />} />
@@ -322,61 +276,6 @@ function App() {
         </Routes>
       </Layout>
     </Router>
-  );
-}
-
-// --- Home Page ---
-function HomePage({ dark, setDark }) {
-  const [started, setStarted] = useState(false);
-  const [countdown, setCountdown] = useState(false);
-  const [capturedImages, setCapturedImages] = useState([]);
-  const [filter, setFilter] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  return (
-    <>
-      <Loader loading={loading} />
-      {!started ? (
-        <Hero onStart={() => setStarted(true)} />
-      ) : (
-        <>
-          {countdown && <Countdown onComplete={() => setCountdown(false)} />}
-          <CameraPreview
-            filter={filter}
-            onCapture={(img) => {
-              setLoading(true);
-              setTimeout(() => {
-                setCapturedImages([...capturedImages, img]);
-                setLoading(false);
-              }, 1200);
-            }}
-          />
-          <FiltersCarousel selected={filter} onSelect={setFilter} />
-          <Timeline />
-        </>
-      )}
-      <FAB onClick={() => window.location.reload()} tooltip="Restart" />
-    </>
-  );
-}
-
-// --- Gallery Page ---
-function GalleryPage() {
-  return (
-    <section>
-      <h2 className="text-2xl font-bold mb-4 text-indigo-700">Your Photos</h2>
-      <div className="text-gray-500">Gallery content goes here.</div>
-    </section>
-  );
-}
-
-// --- About Page ---
-function AboutPage() {
-  return (
-    <section>
-      <h2 className="text-2xl font-bold mb-4 text-indigo-700">About ClickTales</h2>
-      <p className="text-lg">ClickTales is a fun, fast, and friendly way to capture and share your best moments!</p>
-    </section>
   );
 }
 
