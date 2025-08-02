@@ -1,17 +1,25 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import Compliment from './compliments';
+import Compliment from './compliments'; // Make sure this component exists or replace it
 
 const Camera = () => {
   const webcamRef = useRef(null);
   const [image, setImage] = useState(null);
   const [countdown, setCountdown] = useState(null);
-  const [timer, setTimer] = useState(3); // default 3 seconds
-
+  const [timer, setTimer] = useState(3);
   const [gallery, setGallery] = useState(() => {
     const saved = localStorage.getItem('clicktales-gallery');
     return saved ? JSON.parse(saved).slice(0, 3) : [];
   });
+
+  // Ask for camera permission on mount
+  useEffect(() => {
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .catch(() => {
+        alert('Please allow camera access to use this feature.');
+      });
+  }, []);
 
   const capture = () => {
     setCountdown(timer);
@@ -44,10 +52,9 @@ const Camera = () => {
 
       {!image ? (
         <div style={{ position: 'relative', display: 'inline-block' }}>
-          {/* Webcam */}
           <Webcam
-            audio={false}
             ref={webcamRef}
+            audio={false}
             screenshotFormat="image/jpeg"
             width={400}
             videoConstraints={{ facingMode: 'user' }}
@@ -57,7 +64,7 @@ const Camera = () => {
             }}
           />
 
-          {/* Countdown Display */}
+          {/* Countdown */}
           {countdown && (
             <div
               style={{

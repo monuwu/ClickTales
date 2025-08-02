@@ -1,14 +1,44 @@
-// src/App.js
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { Button } from "./components/ui/button";
 import { Camera, Instagram, X, Sun, Moon } from "lucide-react";
 import { WhatsappLogo } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import { auth } from "./lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth, db, storage } from "./lib/firebase";
+import { Button } from "./components/ui/button";
+import PhotoBooth from "./components/PhotoBooth"; // ✅ Camera Component
+import WebcamCapture from "./components/WebcamCapture";
+import { QRCode } from "qrcode.react";
 
-// ===== Hero Section with Slideshow =====
+// ===== Countdown Overlay =====
+function Countdown({ seconds = 3, onComplete }) {
+  const [count, setCount] = useState(seconds);
+  useEffect(() => {
+    if (count > 0) {
+      const timer = setTimeout(() => setCount(count - 1), 700);
+      return () => clearTimeout(timer);
+    } else {
+      onComplete();
+    }
+  }, [count, onComplete]);
+
+  return (
+    <motion.div className="fixed inset-0 flex items-center justify-center backdrop-blur-sm bg-black/80 z-50">
+      <motion.span
+        key={count}
+        className="text-9xl font-extrabold text-orange-400 drop-shadow-lg"
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.5, opacity: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {count > 0 ? count : null}
+      </motion.span>
+    </motion.div>
+  );
+}
+
+// ===== Slideshow Component =====
 function Slideshow() {
   const images = ["/img/slide1.jpg", "/img/slide2.jpg", "/img/slide3.jpg"];
   const [index, setIndex] = useState(0);
@@ -21,8 +51,7 @@ function Slideshow() {
   }, []);
 
   return (
-    <motion.div
-      className="flex-1 flex items-center justify-center rounded-xl overflow-hidden shadow-xl"
+    <motion.div className="flex-1 flex items-center justify-center rounded-xl overflow-hidden shadow-xl"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -40,15 +69,22 @@ function Slideshow() {
   );
 }
 
+// ===== Hero Section =====
 function Hero({ onStart }) {
   return (
-    <section className="backdrop-blur-lg bg-white/10 border border-white/20 flex flex-col md:flex-row items-center justify-between px-8 py-16 rounded-3xl shadow-xl mb-8">
+    <section className="bg-[#2b261d] text-white border border-orange-500 p-10 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
       <div className="flex-1">
-        <h1 className="text-5xl font-extrabold text-white mb-4">Snap. Smile. Share.</h1>
-        <p className="text-lg text-white/80 mb-6">
-          The fun, fast, and friendly way to capture and share your best moments. Try filters, frames, and share instantly!
+        <h1 className="text-5xl font-extrabold text-orange-400 mb-4 leading-tight">
+          Who has a <span className="text-white">special look</span>?
+        </h1>
+        <p className="text-md text-white/80 mb-6">
+          Celebrate World Photography Day with ClickTales. Capture, share, and stand out!
         </p>
-        <Button size="lg" onClick={onStart} className="bg-white/80 text-indigo-700 font-bold rounded-full px-8 py-3 shadow-lg hover:bg-white">
+        <Button
+          size="lg"
+          onClick={onStart}
+          className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-full px-6 py-3 shadow-lg"
+        >
           Start Photobooth
         </Button>
       </div>
@@ -57,53 +93,27 @@ function Hero({ onStart }) {
   );
 }
 
-// ===== Countdown Overlay =====
-function Countdown({ seconds = 3, onComplete }) {
-  const [count, setCount] = useState(seconds);
-  useEffect(() => {
-    if (count > 0) {
-      const timer = setTimeout(() => setCount(count - 1), 700);
-      return () => clearTimeout(timer);
-    } else {
-      onComplete();
-    }
-  }, [count, onComplete]);
-  return (
-    <motion.div className="fixed inset-0 flex items-center justify-center backdrop-blur-md bg-black/60 z-50">
-      <motion.span
-        key={count}
-        className="text-8xl font-extrabold text-white drop-shadow-lg"
-        initial={{ scale: 0.5, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.5, opacity: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {count > 0 ? count : null}
-      </motion.span>
-    </motion.div>
-  );
-}
-
-// ===== Feature Section =====
+// ===== Features Section =====
 function Features() {
   const features = [
-    { title: "Live Filters", desc: "Real-time filters and effects.", icon: <Camera className="text-indigo-500" /> },
+    { title: "Live Filters", desc: "Real-time filters and effects.", icon: <Camera className="text-orange-400" /> },
     { title: "Instant Share", desc: "Post to social media in one tap.", icon: <Instagram className="text-pink-500" /> },
     { title: "Cloud Gallery", desc: "Securely store your memories.", icon: <X className="text-blue-400" /> },
   ];
+
   return (
     <section className="my-16 px-6 grid md:grid-cols-3 gap-8">
       {features.map((feat, idx) => (
         <motion.div
           key={idx}
-          className="bg-white/10 p-6 rounded-2xl backdrop-blur shadow-md"
+          className="bg-[#2b261d] border border-white/10 p-6 rounded-2xl text-white shadow-md"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: idx * 0.2 }}
         >
           <div className="mb-4">{feat.icon}</div>
-          <h3 className="text-xl font-bold">{feat.title}</h3>
+          <h3 className="text-xl font-bold text-orange-400">{feat.title}</h3>
           <p className="text-white/70">{feat.desc}</p>
         </motion.div>
       ))}
@@ -120,18 +130,18 @@ function Testimonials() {
   ];
   return (
     <section className="my-16 px-6 text-center">
-      <h2 className="text-3xl font-extrabold mb-8">What people say</h2>
+      <h2 className="text-3xl font-extrabold text-white mb-8">What people say</h2>
       <div className="grid md:grid-cols-3 gap-6">
         {testimonials.map((t, i) => (
           <motion.div
             key={i}
-            className="bg-white/10 p-6 rounded-xl backdrop-blur shadow-lg"
+            className="bg-[#2b261d] border border-white/10 p-6 rounded-xl text-white shadow-lg"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: i * 0.1 }}
           >
             <p className="text-white/80 italic">"{t.feedback}"</p>
-            <p className="mt-4 font-bold">{t.name}</p>
+            <p className="mt-4 font-bold text-orange-300">{t.name}</p>
           </motion.div>
         ))}
       </div>
@@ -139,30 +149,36 @@ function Testimonials() {
   );
 }
 
-// ===== CTA Section =====
+// ===== Call to Action =====
 function CallToAction() {
   return (
-    <section className="my-20 px-6 text-center bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-12 rounded-3xl shadow-xl text-white">
+    <section className="my-20 px-6 text-center bg-orange-500 p-12 rounded-3xl shadow-xl text-white">
       <h2 className="text-3xl font-extrabold mb-4">Ready to Capture the Moment?</h2>
       <p className="mb-6 text-white/90">Try ClickTales now and experience the magic!</p>
-      <Button className="bg-white text-indigo-700 font-bold px-6 py-3 rounded-full shadow-lg hover:bg-white/90">
+      <Button className="bg-white text-orange-600 font-bold px-6 py-3 rounded-full shadow-lg hover:bg-white/90">
         Get Started
       </Button>
     </section>
   );
 }
 
-// ===== HomePage =====
+// ===== Home Page Composition =====
 function HomePage({ dark, setDark }) {
   const [startBooth, setStartBooth] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+
   const handleStart = () => {
     setStartBooth(true);
-    setTimeout(() => setStartBooth(false), 3000);
+    setTimeout(() => {
+      setStartBooth(false);
+      setShowCamera(true);
+    }, 3000);
   };
 
   return (
     <>
-      {startBooth && <Countdown onComplete={() => alert("Photo Taken!")} />}
+      {startBooth && <Countdown onComplete={() => {}} />}
+      {showCamera && <PhotoBooth onClose={() => setShowCamera(false)} />}
       <Hero onStart={handleStart} />
       <Features />
       <Testimonials />
@@ -171,40 +187,60 @@ function HomePage({ dark, setDark }) {
   );
 }
 
-// ===== Placeholder Pages =====
-const GalleryPage = () => <div className="text-white text-center">Gallery coming soon!</div>;
-const AboutPage = () => <div className="text-white text-center">About us content coming soon!</div>;
+const GalleryPage = () => (
+  <div className="text-white text-center bg-[#2b261d] p-16 rounded-3xl shadow-xl">
+    <h1 className="text-3xl font-bold text-orange-400 mb-4">Gallery</h1>
+    <p>Gallery coming soon!</p>
+  </div>
+);
 
-// ===== Layout =====
-function Layout({ children, dark, setDark, user, onLogout }) {
+const AboutPage = () => (
+  <div className="text-white text-center bg-[#2b261d] p-16 rounded-3xl shadow-xl">
+    <h1 className="text-3xl font-bold text-orange-400 mb-4">About Us</h1>
+    <p>We are passionate about capturing your special moments.</p>
+  </div>
+);
+
+function BoothPage() {
   return (
-    <div className={`dark bg-gray-900 text-white min-h-screen flex flex-col transition-colors duration-500`}>
-      <header className="w-full backdrop-blur-sm bg-white/10 border-b border-white/20 text-white py-4 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Camera className="w-6 h-6" />
-          <span className="font-bold text-lg">ClickTales</span>
-        </div>
-        <nav className="flex gap-6 items-center">
-          <Link to="/" className="hover:underline">Home</Link>
-          <Link to="/gallery" className="hover:underline">Gallery</Link>
-          <Link to="/about" className="hover:underline">About</Link>
-          {user && (
-            <button onClick={onLogout} className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded-full">
-              Logout
-            </button>
-          )}
-          <DarkModeToggle dark={dark} setDark={setDark} />
-        </nav>
-      </header>
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-8 transition-all duration-500 ease-in-out">
-        {children}
-      </main>
-      <Footer />
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#2b261d] text-white">
+      <h1 className="text-4xl font-bold mb-6">Photo Booth</h1>
+      <WebcamCapture />
     </div>
   );
 }
 
-// ===== Dark Mode Toggle =====
+// ===== Layout & Footer =====
+function Layout({ children, dark, setDark, user, onLogout }) {
+  return (
+    <div className={`${dark ? 'dark' : ''}`}>
+      <div className="bg-[#1a1a1a] text-white min-h-screen flex flex-col">
+        <header className="w-full bg-[#2b261d] text-white py-4 px-6 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <Camera className="w-6 h-6 text-orange-400" />
+            <span className="font-bold text-lg">ClickTales</span>
+          </div>
+          <nav className="flex gap-6 items-center">
+            <Link to="/" className="hover:text-orange-400">Home</Link>
+            <Link to="/gallery" className="hover:text-orange-400">Gallery</Link>
+            <Link to="/about" className="hover:text-orange-400">About</Link>
+            {user && (
+              <button onClick={onLogout} className="text-sm bg-red-600 hover:bg-red-700 px-3 py-1 rounded-full">
+                Logout
+              </button>
+            )}
+            <DarkModeToggle dark={dark} setDark={setDark} />
+          </nav>
+        </header>
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
+          {children}
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
 function DarkModeToggle({ dark, setDark }) {
   return (
     <button
@@ -218,12 +254,11 @@ function DarkModeToggle({ dark, setDark }) {
   );
 }
 
-// ===== Footer =====
 function Footer() {
   return (
-    <footer className="mt-16 py-8 backdrop-blur-lg bg-white/10 text-white rounded-t-3xl shadow-inner flex flex-col md:flex-row items-center justify-between px-8">
+    <footer className="mt-16 py-8 bg-[#2b261d] text-white rounded-t-3xl shadow-inner flex flex-col md:flex-row items-center justify-between px-8">
       <div className="flex items-center gap-2">
-        <Camera className="w-6 h-6" />
+        <Camera className="w-6 h-6 text-orange-400" />
         <span className="font-bold text-lg">ClickTales</span>
       </div>
       <div className="flex gap-4 mt-4 md:mt-0">
@@ -237,22 +272,21 @@ function Footer() {
           <X />
         </a>
       </div>
-      <div className="mt-4 md:mt-0 text-sm">
+      <div className="mt-4 md:mt-0 text-sm text-white/70">
         &copy; {new Date().getFullYear()} ClickTales. All rights reserved.
       </div>
     </footer>
   );
 }
 
-// ===== Main App =====
+// ===== App Entry =====
 function App() {
-  const [dark, setDark] = useState(true); // 🌑 Dark mode by default
+  const [dark, setDark] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      console.log("Auth state changed:", currentUser);
     });
     return () => unsubscribe();
   }, []);
@@ -260,7 +294,6 @@ function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      console.log("User signed out");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -273,6 +306,7 @@ function App() {
           <Route path="/" element={<HomePage dark={dark} setDark={setDark} />} />
           <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/booth" element={<BoothPage />} />
         </Routes>
       </Layout>
     </Router>
