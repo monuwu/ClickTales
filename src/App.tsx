@@ -1,0 +1,42 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { PhotoProvider } from './contexts/PhotoContext'
+import { AuthProvider } from './contexts/AuthContext'
+import Home from './pages/Home'
+import CameraPage from './pages/CameraPage'
+import PreviewPage from './pages/PreviewPage'
+import Login from './pages/Login'
+import ProfileSetup from './pages/ProfileSetup'
+import PhotoboothHome from './pages/PhotoboothHome'
+import Gallery from './pages/Gallery'
+import Admin from './pages/Admin'
+import CollagePage from './pages/CollagePage'
+import ComponentDemo from './pages/ComponentDemo'
+import './App.css'
+
+function App() {
+  return (
+    <AuthProvider>
+      <PhotoProvider>
+        <Router>
+          <div className="app">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/features" element={<Home />} />
+              <Route path="/camera" element={<CameraPage />} />
+              <Route path="/preview" element={<PreviewPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/profile-setup" element={<ProfileSetup />} />
+              <Route path="/photobooth" element={<PhotoboothHome />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/collage" element={<CollagePage />} />
+              <Route path="/demo" element={<ComponentDemo />} />
+            </Routes>
+          </div>
+        </Router>
+      </PhotoProvider>
+    </AuthProvider>
+  )
+}
+
+export default App
