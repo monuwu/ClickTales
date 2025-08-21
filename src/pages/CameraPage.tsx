@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette, Grid } from 'lucide-react'
 import Timer from '../components/Timer'
 import Filters, { type Filter, filters } from '../components/Filters'
+import CameraPermissionHelper from '../components/CameraPermissionHelper'
 import { usePhotos } from '../contexts/PhotoContext'
 
 const CameraPage: React.FC = () => {
@@ -22,6 +23,7 @@ const CameraPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState<Filter>(filters[0])
   const [timerDuration] = useState(3)
+  const [showPermissionHelper, setShowPermissionHelper] = useState(false)
 
   useEffect(() => {
     startCamera()
@@ -53,7 +55,13 @@ const CameraPage: React.FC = () => {
         setIsLoading(false)
       }
     } catch (err) {
-      setError('Unable to access camera. Please ensure you have granted camera permissions.')
+      const error = err as Error
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        setError('Camera access denied. Click below to enable camera permissions.')
+        setShowPermissionHelper(true)
+      } else {
+        setError('Unable to access camera. Please check your camera and try again.')
+      }
       setIsLoading(false)
     }
   }
@@ -127,6 +135,20 @@ const CameraPage: React.FC = () => {
     setFacingMode(facingMode === 'user' ? 'environment' : 'user')
   }
 
+  const handlePermissionRequest = () => {
+    setShowPermissionHelper(false)
+    setError(null)
+    startCamera()
+  }
+
+  const handleEnableCameraClick = () => {
+    if (error && error.includes('denied')) {
+      setShowPermissionHelper(true)
+    } else {
+      startCamera()
+    }
+  }
+
   return (
     <div className="h-screen bg-black flex flex-col overflow-hidden">
       {/* Header */}
@@ -173,15 +195,26 @@ const CameraPage: React.FC = () => {
 
           {error && (
             <div className="absolute inset-0 flex items-center justify-center bg-red-900/20 backdrop-blur-sm">
-              <div className="text-center bg-red-500/20 p-8 rounded-xl border border-red-500/30">
+              <div className="text-center bg-red-500/20 p-8 rounded-xl border border-red-500/30 max-w-md mx-4">
                 <Camera className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                <p className="text-white text-lg mb-4">{error}</p>
-                <button
-                  onClick={startCamera}
-                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors"
-                >
-                  Try Again
-                </button>
+                <p className="text-white text-lg mb-6">{error}</p>
+                <div className="space-y-3">
+                  {error.includes('denied') || error.includes('permissions') ? (
+                    <button
+                      onClick={handleEnableCameraClick}
+                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                    >
+                      Enable Camera Access
+                    </button>
+                  ) : (
+                    <button
+                      onClick={startCamera}
+                      className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                    >
+                      Try Again
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -289,6 +322,13 @@ const CameraPage: React.FC = () => {
         onComplete={handleTimerComplete}
         isActive={showTimer}
         onCancel={handleTimerCancel}
+      />
+
+      {/* Camera Permission Helper */}
+      <CameraPermissionHelper
+        isVisible={showPermissionHelper}
+        onRequestPermission={handlePermissionRequest}
+        onClose={() => setShowPermissionHelper(false)}
       />
 
       {/* Hidden canvas for photo capture */}
