@@ -1,0 +1,64 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Professional studio background -->
+  <rect width="1200" height="800" fill="#0f172a"/>
+  
+  <!-- Studio lighting setup -->
+  <ellipse cx="300" cy="100" rx="200" ry="50" fill="rgba(14, 165, 233, 0.2)" transform="rotate(-15 300 100)"/>
+  <ellipse cx="900" cy="150" rx="180" ry="40" fill="rgba(6, 182, 212, 0.15)" transform="rotate(20 900 150)"/>
+  
+  <!-- Professional equipment silhouettes -->
+  <!-- Studio light 1 -->
+  <g transform="translate(150, 200)">
+    <line x1="30" y1="0" x2="30" y2="120" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+    <circle cx="30" cy="130" r="8" fill="rgba(255,255,255,0.15)"/>
+    <rect x="10" y="40" width="40" height="30" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+    <ellipse cx="30" cy="55" rx="25" ry="15" fill="rgba(6, 182, 212, 0.3)"/>
+  </g>
+  
+  <!-- Studio light 2 -->
+  <g transform="translate(1000, 250)">
+    <line x1="30" y1="0" x2="30" y2="100" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+    <circle cx="30" cy="110" r="8" fill="rgba(255,255,255,0.15)"/>
+    <rect x="5" y="30" width="50" height="35" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+    <ellipse cx="30" cy="47.5" rx="30" ry="17.5" fill="rgba(14, 165, 233, 0.3)"/>
+  </g>
+  
+  <!-- Professional camera on tripod -->
+  <g transform="translate(500, 450)">
+    <!-- Tripod legs -->
+    <line x1="0" y1="150" x2="-40" y2="250" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+    <line x1="0" y1="150" x2="40" y2="250" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+    <line x1="0" y1="150" x2="0" y2="250" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+    
+    <!-- Camera body -->
+    <rect x="-25" y="120" width="50" height="35" rx="5" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+    <circle cx="0" cy="137.5" r="15" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="3"/>
+    <circle cx="0" cy="137.5" r="8" fill="rgba(14, 165, 233, 0.5)"/>
+    
+    <!-- Lens -->
+    <rect x="-15" y="105" width="30" height="20" rx="15" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  </g>
+  
+  <!-- Quality indicators -->
+  <g transform="translate(200, 500)">
+    <rect x="0" y="0" width="100" height="60" fill="rgba(255,255,255,0.08)" stroke="rgba(6, 182, 212, 0.3)" stroke-width="2" rx="5"/>
+    <text x="50" y="35" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="rgba(6, 182, 212, 0.8)" text-anchor="middle">4K</text>
+  </g>
+  
+  <g transform="translate(850, 500)">
+    <rect x="0" y="0" width="120" height="60" fill="rgba(255,255,255,0.08)" stroke="rgba(14, 165, 233, 0.3)" stroke-width="2" rx="5"/>
+    <text x="60" y="25" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="rgba(14, 165, 233, 0.8)" text-anchor="middle">STUDIO</text>
+    <text x="60" y="40" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="rgba(14, 165, 233, 0.8)" text-anchor="middle">QUALITY</text>
+  </g>
+  
+  <!-- Ambient particles -->
+  <circle cx="100" cy="300" r="2" fill="rgba(6, 182, 212, 0.4)"/>
+  <circle cx="250" cy="400" r="1.5" fill="rgba(14, 165, 233, 0.5)"/>
+  <circle cx="800" cy="350" r="2" fill="rgba(6, 182, 212, 0.3)"/>
+  <circle cx="950" cy="450" r="1" fill="rgba(14, 165, 233, 0.6)"/>
+  <circle cx="1100" cy="300" r="1.5" fill="rgba(6, 182, 212, 0.4)"/>
+  
+  <!-- Light rays -->
+  <path d="M300 100 L600 400" stroke="rgba(6, 182, 212, 0.1)" stroke-width="2" opacity="0.5"/>
+  <path d="M900 150 L600 400" stroke="rgba(14, 165, 233, 0.1)" stroke-width="2" opacity="0.5"/>
+</svg>
