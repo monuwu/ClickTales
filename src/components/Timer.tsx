@@ -23,7 +23,7 @@ const Timer: React.FC<TimerProps> = ({ duration, onComplete, isActive, onCancel 
   }, [isActive, duration, isRunning])
 
   useEffect(() => {
-    let interval: number | null = null
+    let interval: NodeJS.Timeout | null = null
 
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {

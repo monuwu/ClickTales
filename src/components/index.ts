@@ -19,3 +19,10 @@ export { default as CameraPreview } from './CameraPreview'
 export { default as Collage } from './Collage'
 export { default as Filters } from './Filters'
 export { default as Timer } from './Timer'
+
+// Gallery components
+export { default as GalleryHeader } from './GalleryHeader'
+export { default as PhotoGrid } from './PhotoGrid'
+export { default as CollageSection } from './CollageSection'
+export { default as AlbumManager } from './AlbumManager'
+export { PDFExporter, exportAlbumToPDF, exportPhotosToPDF } from './PDFExporter'

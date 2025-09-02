@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { Camera, Sparkles, ArrowRight, Users, Heart, Download, Zap, Share2 } from '../components/icons'
+import { Camera, Sparkles, ArrowRight, Users, Heart, Zap, Settings, Share2 } from '../components/icons'
 import Navigation from '../components/Navigation'
 
 const LandingPage: React.FC = () => {
+  console.log('LandingPage component is rendering...')
   const location = useLocation()
   const featuresRef = useRef<HTMLElement>(null)
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -55,96 +56,117 @@ const LandingPage: React.FC = () => {
     }
   }, [location.hash])
 
-  // How It Works steps - UPDATED WITH ICONS INSTEAD OF NUMBERS
-  const steps = [
-    {
-      title: "Set Up",
-      description: "Quick 2-minute setup with your camera and preferred settings",
-      icon: <Camera className="w-8 h-8" />
-    },
-    {
-      title: "Capture",
-      description: "Guests take amazing photos with built-in filters and effects",
-      icon: <Sparkles className="w-8 h-8" />
-    },
-    {
-      title: "Share",
-      description: "Instant sharing via QR codes, email, or direct download",
-      icon: <Share2 className="w-8 h-8" />
-    }
-  ]
-
-  // Modern 2025 Features
+  // Enhanced features with modern approach
   const features = [
     {
-      icon: <Camera className="w-7 h-7" />,
-      title: "Instant Capture",
-      description: "Lightning-fast photo capture with real-time filters and instant sharing capabilities"
+      icon: Camera,
+      title: "Instant Photo Magic",
+      description: "AI-powered camera with real-time filters, smart framing, and professional-grade image processing",
+      color: "from-purple-500 to-pink-500",
+      stats: "99.9% uptime"
     },
     {
-      icon: <Users className="w-7 h-7" />,
-      title: "Group Magic",
-      description: "Perfect group shots with smart framing and automatic countdown timers"
+      icon: Users,
+      title: "Smart Group Detection", 
+      description: "Automatically detects groups, optimizes framing, and ensures everyone looks their best",
+      color: "from-blue-500 to-cyan-500",
+      stats: "Up to 50 people"
     },
     {
-      icon: <Sparkles className="w-7 h-7" />,
-      title: "Pro Filters",
-      description: "Studio-quality filters and effects that make every photo Instagram-ready"
+      icon: Sparkles,
+      title: "Studio-Quality Filters",
+      description: "Professional filters, lighting effects, and beauty enhancements for Instagram-ready photos",
+      color: "from-emerald-500 to-teal-500",
+      stats: "100+ filters"
     },
     {
-      icon: <Heart className="w-7 h-7" />,
-      title: "Memory Maker",
-      description: "Create unforgettable moments for weddings, parties, and special celebrations"
+      icon: Share2,
+      title: "Instant Sharing Hub",
+      description: "QR codes, email, social media, and cloud storage integration for seamless photo distribution",
+      color: "from-orange-500 to-red-500",
+      stats: "Share in seconds"
     },
     {
-      icon: <Download className="w-7 h-7" />,
-      title: "Share Instantly",
-      description: "QR codes, email sharing, and social media integration built right in"
+      icon: Zap,
+      title: "Lightning Performance",
+      description: "Ultra-fast processing, zero lag, and optimized for high-volume events and celebrations",
+      color: "from-violet-500 to-purple-500",
+      stats: "< 0.5s processing"
     },
     {
-      icon: <Zap className="w-7 h-7" />,
-      title: "Lightning Fast",
-      description: "Optimized performance ensures smooth operation even with large groups"
+      icon: Heart,
+      title: "Memory Preservation",
+      description: "Automatic backup, cloud sync, and lifetime storage for all your precious moments",
+      color: "from-pink-500 to-rose-500",
+      stats: "Unlimited storage"
     }
   ]
 
-  // Testimonials with profile pictures
+  // Updated testimonials with more detail
   const testimonials = [
     {
-      name: "Sarah Johnson",
-      role: "Wedding Bride",
+      name: "Sarah & James Wedding",
+      role: "Bride & Groom",
       image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face&auto=format&q=80",
-      quote: "ClickTales made our wedding reception unforgettable! The photo quality is amazing and setup was so easy.",
-      rating: 5
+      quote: "ClickTales transformed our wedding reception! Our guests loved the interactive experience, and the photo quality exceeded our expectations. We got over 500 amazing photos that night!",
+      rating: 5,
+      event: "Wedding Reception",
+      photos: "500+ photos"
     },
     {
-      name: "Michael Chen", 
-      role: "Event Manager",
+      name: "TechCorp Annual Gala", 
+      role: "Event Coordinator",
       image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face&auto=format&q=80",
-      quote: "Perfect for our corporate event! Professional quality photos and the team loved the interactive experience.",
-      rating: 5
+      quote: "Professional setup, seamless operation, and fantastic results. Our employees are still talking about how fun and easy it was. Perfect for corporate events!",
+      rating: 5,
+      event: "Corporate Gala",
+      photos: "300+ photos"
     },
     {
-      name: "Emily Rodriguez",
-      role: "Parent",
+      name: "Emily's Sweet 16",
+      role: "Proud Mom",
       image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face&auto=format&q=80", 
-      quote: "My kids' birthday party was a hit! The filters are fun and the photos came out beautifully.",
-      rating: 5
+      quote: "The kids absolutely loved it! The filters were so fun and creative. We ended up with beautiful memories that will last forever. Highly recommend for any celebration!",
+      rating: 5,
+      event: "Birthday Party",
+      photos: "200+ photos"
     }
   ]
 
-  // Photo Gallery samples
-  const galleryPhotos = [
-    "https://images.unsplash.com/photo-1511578314322-379afb476865?w=400&h=400&fit=crop&crop=center&auto=format&q=80",
-    "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=400&fit=crop&crop=center&auto=format&q=80",
-    "https://images.unsplash.com/photo-1529636798458-92182e662485?w=400&h=400&fit=crop&crop=center&auto=format&q=80",
-    "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400&h=400&fit=crop&crop=center&auto=format&q=80",
-    "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&h=400&fit=crop&crop=center&auto=format&q=80",
-    "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&h=400&fit=crop&crop=center&auto=format&q=80"
+  // How it works steps
+  const steps = [
+    {
+      number: "01",
+      title: "Quick Setup",
+      description: "Connect your camera and configure settings in under 2 minutes",
+      icon: Settings,
+      color: "from-purple-400 to-pink-400"
+    },
+    {
+      number: "02", 
+      title: "Start Capturing",
+      description: "Guests take photos with built-in filters, effects, and smart framing",
+      icon: Camera,
+      color: "from-blue-400 to-cyan-400"
+    },
+    {
+      number: "03",
+      title: "Instant Magic",
+      description: "Photos are processed, enhanced, and ready for sharing in seconds",
+      icon: Sparkles,
+      color: "from-emerald-400 to-teal-400"
+    },
+    {
+      number: "04",
+      title: "Share & Save",
+      description: "QR codes, email sharing, and automatic backup ensure no memory is lost",
+      icon: Share2,
+      color: "from-orange-400 to-red-400"
+    }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-rose-50/20 font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-rose-50/20">
       {/* Animated Background */}
       <motion.div 
         className="fixed inset-0 z-0"
@@ -167,7 +189,7 @@ const LandingPage: React.FC = () => {
         <Navigation />
       </motion.div>
       
-      {/* Hero Slideshow Section - PRESERVED */}
+      {/* Hero Slideshow Section - PRESERVED EXACTLY */}
       <section className="relative h-screen overflow-hidden pt-16">
         <div className="relative w-full h-full">
           {slides.map((slide, index) => (
@@ -218,7 +240,7 @@ const LandingPage: React.FC = () => {
                     transition={{ duration: 0.8, delay: 0.7 }}
                     className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6"
                   >
-                    <Link to="/camera">
+                    <Link to="/photobooth">
                       <motion.button
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.98 }}
@@ -229,12 +251,12 @@ const LandingPage: React.FC = () => {
                         <ArrowRight className="w-4 h-4" />
                       </motion.button>
                     </Link>
-                    <Link to="#memories">
+                    <Link to="#features">
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         className="text-white font-medium py-4 px-8 border border-white/30 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
                       >
-                        Explore Memories
+                        Explore Features
                       </motion.button>
                     </Link>
                   </motion.div>
@@ -278,12 +300,37 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 1. Your Memories Section - FIRST */}
-      <section id="memories" className="relative py-20 sm:py-24 lg:py-32 px-6 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50/60 via-pink-50/40 to-violet-50/50" />
-        <div className="absolute inset-0 bg-gradient-to-r from-rose-50/30 via-transparent to-purple-50/20" />
-        
-        <div className="relative z-10 max-w-7xl mx-auto">
+      {/* Stats Section */}
+      <section className="relative py-20 bg-white/60 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { number: "50K+", label: "Photos Captured", color: "from-purple-600 to-pink-600" },
+              { number: "99.9%", label: "Uptime", color: "from-blue-600 to-cyan-600" },
+              { number: "500+", label: "Events", color: "from-emerald-600 to-teal-600" },
+              { number: "24/7", label: "Support", color: "from-orange-600 to-red-600" }
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
+                  {stat.number}
+                </div>
+                <div className="text-gray-600 font-medium">{stat.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section ref={featuresRef} id="features" className="relative py-24 bg-gradient-to-br from-white via-purple-50/50 to-pink-50/30">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -291,63 +338,50 @@ const LandingPage: React.FC = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Your <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Memories</span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Why Choose <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">ClickTales</span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Amazing moments captured with ClickTales
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Advanced technology meets stunning design for the ultimate photo booth experience
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
-            {galleryPhotos.map((photo, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="group cursor-pointer"
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                className="group relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-white/50"
               >
-                <div className="relative overflow-hidden rounded-2xl bg-white/70 backdrop-blur-md border border-purple-200/40 shadow-lg hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 hover:border-purple-300/50">
-                  <img
-                    src={photo}
-                    alt={`Memory ${index + 1}`}
-                    className="w-full h-48 sm:h-64 object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 rounded-3xl transition-opacity duration-300`} />
+                
+                <div className="relative z-10">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl mb-6 shadow-lg`}>
+                    <feature.icon className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                  <p className="text-gray-600 leading-relaxed mb-4">{feature.description}</p>
+                  
+                  <div className={`inline-flex items-center px-3 py-1 bg-gradient-to-r ${feature.color} bg-opacity-10 rounded-full`}>
+                    <span className={`text-sm font-semibold bg-gradient-to-r ${feature.color} bg-clip-text text-transparent`}>
+                      {feature.stats}
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <Link to="/gallery">
-              <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300"
-              >
-                View Full Gallery
-              </motion.button>
-            </Link>
-          </motion.div>
         </div>
       </section>
 
-      {/* 2. How It Works Section - SECOND */}
-      <section className="relative py-20 sm:py-24 lg:py-32 px-6 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-50/60 via-purple-50/40 to-pink-50/50" />
-        <div className="absolute inset-0 bg-gradient-to-l from-rose-50/30 via-transparent to-violet-50/20" />
-        
-        <div className="relative z-10 max-w-6xl mx-auto">
+      {/* How It Works Section */}
+      <section className="relative py-24 bg-gradient-to-br from-gray-50 to-purple-50/30">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -355,155 +389,132 @@ const LandingPage: React.FC = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              How It <span className="bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Works</span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              How It <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Works</span>
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Get started with your photobooth experience in three simple steps
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Get started in minutes with our simple 4-step process
             </p>
           </motion.div>
 
-          {/* Single Row Layout */}
-          <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
-              <React.Fragment key={index}>
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.2 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -8, scale: 1.02 }}
-                  className="flex-1 max-w-xs group"
-                >
-                  <div className="bg-white/80 backdrop-blur-md border border-violet-200/40 rounded-3xl p-8 text-center shadow-lg hover:shadow-2xl hover:shadow-violet-500/10 transition-all duration-300 hover:border-violet-300/50">
-                    {/* Icon Circle */}
-                    <motion.div 
-                      className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white shadow-lg group-hover:shadow-xl group-hover:shadow-violet-500/20 transition-all duration-300"
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                    >
-                      {step.icon}
-                    </motion.div>
-
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-violet-700 transition-colors duration-300">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {step.description}
-                    </p>
-                  </div>
-                </motion.div>
-
-                {index < steps.length - 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: index * 0.2 + 0.3 }}
-                    viewport={{ once: true }}
-                    className="hidden lg:flex items-center justify-center"
-                  >
-                    <ArrowRight className="w-8 h-8 text-violet-400" />
-                  </motion.div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Why Choose ClickTales - THIRD */}
-      <section id="features" ref={featuresRef} className="relative py-20 sm:py-24 lg:py-32 px-6 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-50/60 via-rose-50/40 to-purple-50/50" />
-        <div className="absolute inset-0 bg-gradient-to-t from-violet-50/20 via-transparent to-pink-50/30" />
-        
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose 
-              <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent"> ClickTales?</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Professional photobooth experience with cutting-edge technology and seamless user experience
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
+                key={step.number}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
                 viewport={{ once: true }}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className="group bg-white/80 backdrop-blur-md border border-pink-200/40 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300 hover:border-pink-300/50"
+                className="relative text-center"
               >
-                <motion.div 
-                  className="w-16 h-16 rounded-2xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 flex items-center justify-center mb-6 text-pink-600 shadow-sm group-hover:scale-105 transition-transform duration-300"
-                  whileHover={{ rotate: 5 }}
-                >
-                  {feature.icon}
-                </motion.div>
+                <div className="relative">
+                  <div className={`inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br ${step.color} rounded-2xl mb-6 shadow-lg`}>
+                    <step.icon className="w-10 h-10 text-white" />
+                  </div>
+                  
+                  <div className={`absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br ${step.color} rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg`}>
+                    {step.number}
+                  </div>
+                </div>
                 
-                <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-pink-700 transition-colors duration-300">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {feature.description}
-                </p>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                <p className="text-gray-600 leading-relaxed">{step.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 4. Ready to Create Magic - FOURTH */}
-      <section className="relative py-20 sm:py-24 lg:py-32 px-6 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50/60 via-violet-50/40 to-indigo-50/50" />
-        <div className="absolute inset-0 bg-gradient-to-t from-purple-100/20 via-transparent to-violet-50/30" />
-        
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
+      {/* Testimonials Section */}
+      <section className="relative py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="bg-white/80 backdrop-blur-md border border-purple-200/40 rounded-3xl p-12 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300"
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Ready to Create 
-              <span className="block bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mt-2">
-                Magic?
-              </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              What Our <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Customers</span> Say
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-              Join thousands who have captured millions of precious moments with ClickTales
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Real stories from real events powered by ClickTales
             </p>
+          </motion.div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
-              <Link to="/camera">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <motion.div
+                key={testimonial.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                className="bg-gradient-to-br from-white to-purple-50/30 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-100"
+              >
+                <div className="flex items-center mb-6">
+                  <img
+                    src={testimonial.image}
+                    alt={testimonial.name}
+                    className="w-16 h-16 rounded-full object-cover mr-4 border-4 border-white shadow-lg"
+                  />
+                  <div>
+                    <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
+                    <p className="text-purple-600 font-medium">{testimonial.event}</p>
+                    <p className="text-sm text-gray-500">{testimonial.photos}</p>
+                  </div>
+                </div>
+                
+                <div className="flex mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Heart key={i} className="w-5 h-5 text-pink-500 fill-current" />
+                  ))}
+                </div>
+                
+                <p className="text-gray-700 leading-relaxed italic">"{testimonial.quote}"</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="relative py-24 bg-gradient-to-br from-purple-600 via-pink-600 to-violet-600">
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative z-10 max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Ready to Create Amazing Memories?
+            </h2>
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              Join thousands of satisfied customers and start capturing unforgettable moments today
+            </p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/photobooth">
                 <motion.button
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 flex items-center space-x-3"
+                  className="bg-white text-purple-600 font-bold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-3"
                 >
                   <Camera className="w-5 h-5" />
-                  <span>Launch Experience</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Start Free Trial</span>
                 </motion.button>
               </Link>
               
               <Link to="/gallery">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
-                  className="text-gray-700 font-medium py-4 px-8 border border-purple-300/50 rounded-2xl hover:bg-purple-50/50 hover:border-purple-400/60 transition-all duration-300"
+                  className="text-white font-semibold py-4 px-8 border-2 border-white/30 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
                 >
-                  Explore Gallery
+                  View Gallery
                 </motion.button>
               </Link>
             </div>
@@ -511,97 +522,26 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 5. Reviews/Testimonials Section - FIFTH */}
-      <section className="relative py-20 sm:py-24 lg:py-32 px-6 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-rose-50/60 via-pink-50/40 to-purple-50/50" />
-        <div className="absolute inset-0 bg-gradient-to-l from-violet-50/30 via-transparent to-rose-50/20" />
-        
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              What Our <span className="bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">Clients Say</span>
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Trusted by thousands for unforgettable moments
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className="bg-white/80 backdrop-blur-md border border-rose-200/40 rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-300 hover:border-rose-300/50"
-              >
-                <div className="flex items-center mb-6">
-                  <motion.img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-16 h-16 rounded-full object-cover mr-4 shadow-lg"
-                    whileHover={{ scale: 1.1 }}
-                  />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-rose-600 font-medium">{testimonial.role}</p>
-                  </div>
-                </div>
-                
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <motion.svg 
-                      key={i} 
-                      className="w-5 h-5 text-yellow-400 fill-current" 
-                      viewBox="0 0 20 20"
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 + i * 0.1 }}
-                    >
-                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                    </motion.svg>
-                  ))}
-                </div>
-                
-                <p className="text-gray-700 leading-relaxed italic">
-                  "{testimonial.quote}"
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Modern Footer */}
-      <footer className="relative bg-white/80 backdrop-blur-md border-t border-purple-200/40 py-16 px-6 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50/40 via-pink-50/20 to-violet-50/30" />
-        
-        <div className="max-w-7xl mx-auto relative z-10">
+      {/* Footer */}
+      <footer className="relative bg-gray-900 text-white py-16">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div className="md:col-span-2">
-              <motion.h3 
-                className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent"
-                whileHover={{ scale: 1.02 }}
-              >
-                ClickTales
-              </motion.h3>
-              <p className="text-gray-600 mb-6 max-w-md">
-                Creating memories, one click at a time. The ultimate photobooth experience for any occasion.
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold">ClickTales</span>
+              </div>
+              <p className="text-gray-300 leading-relaxed max-w-md mb-6">
+                Creating unforgettable memories with cutting-edge photo booth technology. 
+                Perfect for weddings, parties, corporate events, and special celebrations.
               </p>
-              
               <div className="flex space-x-4">
-                {['Facebook', 'Twitter', 'Instagram'].map((social) => (
+                {['Facebook', 'Twitter', 'Instagram', 'LinkedIn'].map((social) => (
                   <motion.div 
                     key={social}
-                    className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center cursor-pointer text-white font-semibold shadow-lg hover:shadow-xl"
+                    className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center cursor-pointer text-white font-semibold shadow-lg hover:shadow-xl"
                     whileHover={{ scale: 1.1, y: -2 }}
                   >
                     {social.charAt(0)}
@@ -611,9 +551,10 @@ const LandingPage: React.FC = () => {
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-6 text-gray-900">Quick Links</h4>
+              <h4 className="text-lg font-semibold mb-6">Quick Links</h4>
               <ul className="space-y-3">
                 {[
+                  { name: 'Photo Booth', path: '/photobooth' },
                   { name: 'Camera', path: '/camera' },
                   { name: 'Gallery', path: '/gallery' },
                   { name: 'Features', path: '#features' }
@@ -621,7 +562,7 @@ const LandingPage: React.FC = () => {
                   <li key={link.name}>
                     <Link 
                       to={link.path} 
-                      className="text-gray-600 hover:text-purple-700 transition-colors"
+                      className="text-gray-300 hover:text-purple-400 transition-colors"
                     >
                       {link.name}
                     </Link>
@@ -631,17 +572,18 @@ const LandingPage: React.FC = () => {
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-6 text-gray-900">Support</h4>
+              <h4 className="text-lg font-semibold mb-6">Support</h4>
               <ul className="space-y-3">
                 {[
                   { name: 'Help Center', path: '/help' },
                   { name: 'Privacy Policy', path: '/privacy' },
+                  { name: 'Terms of Service', path: '/terms' },
                   { name: 'Contact Us', path: '/contact' }
                 ].map((link) => (
                   <li key={link.name}>
                     <Link 
                       to={link.path} 
-                      className="text-gray-600 hover:text-purple-700 transition-colors"
+                      className="text-gray-300 hover:text-purple-400 transition-colors"
                     >
                       {link.name}
                     </Link>
@@ -651,10 +593,15 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="border-t border-purple-200 pt-8 text-center">
-            <p className="text-gray-600">
+          <div className="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 mb-4 md:mb-0">
               © 2025 ClickTales. All rights reserved. Made with ❤️ for creating unforgettable memories.
             </p>
+            <div className="flex items-center space-x-4 text-sm text-gray-400">
+              <span>Powered by React & Vite</span>
+              <span>•</span>
+              <span>v2.0.0</span>
+            </div>
           </div>
         </div>
       </footer>

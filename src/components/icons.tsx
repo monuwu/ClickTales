@@ -10,7 +10,6 @@ import {
   FiZap as Zap,
   FiShield as Shield,
   FiSmartphone as Smartphone,
-  FiRotateCcw as RotateCcw,
   FiShare as Share,
   FiSave as Save,
   FiSettings as Settings,
@@ -41,7 +40,13 @@ import {
   FiMoon as Moon,
   FiSun as Sun,
   FiPlay as Play,
-  FiPause as Pause
+  FiPause as Pause,
+  FiLayers as Layout,
+  FiFolder as FolderOpen,
+  FiImage as ImageIcon,
+  FiPlus as Plus,
+  FiRotateCcw as RotateCcwIcon,
+  FiEdit2 as Edit2
 } from 'react-icons/fi'
 import { MdPalette as Palette, MdGrid3X3 as Grid3X3 } from 'react-icons/md'
 
@@ -57,7 +62,6 @@ export {
   Zap,
   Shield,
   Smartphone,
-  RotateCcw,
   Share,
   Save,
   Settings,
@@ -90,9 +94,14 @@ export {
   Sun,
   Play,
   Pause,
-  Grid3X3
+  Grid3X3,
+  Layout,
+  FolderOpen,
+  ImageIcon,
+  Plus,
+  Edit2
 }
 
-// Some additional mappings for specific names
+export const RotateCcw = RotateCcwIcon
 export const TimerIcon = Timer
-export const Image = Camera
+export const Image = ImageIcon

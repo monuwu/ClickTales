@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette, Grid } from '../components/icons'
+import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette } from '../components/icons'
 import Timer from '../components/Timer'
 import Filters, { type Filter, filters } from '../components/Filters'
 import CameraPermissionHelper from '../components/CameraPermissionHelper'
@@ -150,26 +150,28 @@ const CameraPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-black flex flex-col overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex flex-col overflow-hidden">
       {/* Header */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between p-4 bg-black/80 backdrop-blur-sm border-b border-gray-800 flex-shrink-0"
+        className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-lg border-b border-purple-200/30 shadow-lg flex-shrink-0"
       >
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-white hover:text-purple-400 transition-colors"
+          className="flex items-center gap-2 text-gray-700 hover:text-purple-600 transition-colors font-medium"
         >
           <ArrowLeft className="w-6 h-6" />
-          <span className="font-medium">Back</span>
+          <span>Back</span>
         </button>
         
-        <h1 className="text-xl font-bold text-white">CLICKTALES Camera</h1>
+        <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          ClickTales Camera
+        </h1>
         
         <button
           onClick={toggleCamera}
-          className="p-2 text-white hover:text-purple-400 transition-colors"
+          className="p-2 text-gray-700 hover:text-purple-600 transition-colors rounded-lg hover:bg-purple-100/50"
           title="Switch Camera"
         >
           <RotateCcw className="w-6 h-6" />
@@ -177,39 +179,39 @@ const CameraPage: React.FC = () => {
       </motion.div>
 
       {/* Camera Container */}
-      <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-6 overflow-hidden">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative w-full max-w-4xl aspect-video bg-gray-900 rounded-2xl overflow-hidden shadow-2xl"
+          className="relative w-full max-w-4xl aspect-video bg-white/70 backdrop-blur-lg rounded-3xl overflow-hidden shadow-2xl border border-white/20"
         >
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm">
               <div className="text-center">
                 <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-white text-lg">Starting camera...</p>
+                <p className="text-gray-700 text-lg font-medium">Starting camera...</p>
               </div>
             </div>
           )}
 
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-red-900/20 backdrop-blur-sm">
-              <div className="text-center bg-red-500/20 p-8 rounded-xl border border-red-500/30 max-w-md mx-4">
-                <Camera className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                <p className="text-white text-lg mb-6">{error}</p>
+            <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
+              <div className="text-center bg-white/90 backdrop-blur-sm p-8 rounded-2xl border border-red-200 shadow-xl max-w-md mx-4">
+                <Camera className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <p className="text-gray-700 text-lg mb-6 font-medium">{error}</p>
                 <div className="space-y-3">
                   {error.includes('denied') || error.includes('permissions') ? (
                     <button
                       onClick={handleEnableCameraClick}
-                      className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
                     >
                       Enable Camera Access
                     </button>
                   ) : (
                     <button
                       onClick={startCamera}
-                      className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+                      className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg"
                     >
                       Try Again
                     </button>
@@ -231,14 +233,14 @@ const CameraPage: React.FC = () => {
           {/* Camera overlay effects */}
           <div className="absolute inset-0 pointer-events-none">
             {/* Corner brackets */}
-            <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-white/50"></div>
-            <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-white/50"></div>
-            <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-white/50"></div>
-            <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-white/50"></div>
+            <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-purple-400/70"></div>
+            <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-purple-400/70"></div>
+            <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-purple-400/70"></div>
+            <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-purple-400/70"></div>
             
             {/* Center focus indicator */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <div className="w-12 h-12 border-2 border-white/70 rounded-full animate-pulse"></div>
+              <div className="w-12 h-12 border-2 border-purple-500/80 rounded-full animate-pulse"></div>
             </div>
           </div>
         </motion.div>
@@ -249,28 +251,32 @@ const CameraPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="flex items-center justify-center p-8 bg-black/80 backdrop-blur-sm flex-shrink-0"
+        className="flex items-center justify-center p-8 bg-white/80 backdrop-blur-lg border-t border-purple-200/30 shadow-lg flex-shrink-0"
       >
         <div className="flex items-center gap-8">
           {/* Timer Button */}
           <button 
             onClick={() => setTimerEnabled(!timerEnabled)}
-            className={`p-4 rounded-full transition-colors ${
-              timerEnabled ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-800 hover:bg-gray-700'
+            className={`p-4 rounded-2xl transition-all duration-300 shadow-lg ${
+              timerEnabled 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/30' 
+                : 'bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-purple-100/70 border border-purple-200/30'
             }`}
             title={timerEnabled ? `Timer: ${timerDuration}s` : 'Enable Timer'}
           >
-            <TimerIcon className="w-6 h-6 text-white" />
+            <TimerIcon className="w-6 h-6" />
           </button>
 
           {/* Filters Button */}
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className={`p-4 rounded-full transition-colors ${
-              showFilters ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-800 hover:bg-gray-700'
+            className={`p-4 rounded-2xl transition-all duration-300 shadow-lg ${
+              showFilters 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/30' 
+                : 'bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-purple-100/70 border border-purple-200/30'
             }`}
           >
-            <Palette className="w-6 h-6 text-white" />
+            <Palette className="w-6 h-6" />
           </button>
 
           {/* Capture Button */}
@@ -279,30 +285,22 @@ const CameraPage: React.FC = () => {
             whileTap={{ scale: 0.95 }}
             onClick={handleCaptureClick}
             disabled={isLoading || !!error}
-            className="relative w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 rounded-full shadow-2xl transition-all duration-300 disabled:cursor-not-allowed group"
+            className="relative w-20 h-20 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 rounded-full shadow-2xl transition-all duration-300 disabled:cursor-not-allowed group"
           >
-            <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center group-hover:bg-gray-100 transition-colors">
-              <Camera className="w-8 h-8 text-gray-800" />
+            <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center group-hover:bg-gray-50 transition-colors shadow-inner">
+              <Camera className="w-8 h-8 text-gray-700" />
             </div>
             
             {/* Pulse effect */}
-            <div className="absolute inset-0 rounded-full bg-purple-500 animate-ping opacity-20"></div>
+            <div className="absolute inset-0 rounded-full bg-purple-500 animate-ping opacity-30"></div>
           </motion.button>
-
-          {/* Collage Button */}
-          <button 
-            onClick={() => navigate('/collage')}
-            className="p-4 bg-gray-800 hover:bg-gray-700 rounded-full transition-colors"
-          >
-            <Grid className="w-6 h-6 text-white" />
-          </button>
 
           {/* Gallery Button */}
           <button 
             onClick={() => navigate('/gallery')}
-            className="p-4 bg-gray-800 hover:bg-gray-700 rounded-full transition-colors"
+            className="p-4 bg-white/70 backdrop-blur-sm hover:bg-purple-100/70 rounded-2xl transition-all duration-300 shadow-lg border border-purple-200/30 text-gray-700 hover:text-purple-600"
           >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </button>

@@ -1,374 +1,312 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { 
-  Camera, 
-  Image, 
-  Settings, 
-  Grid3X3, 
-  Download,
-  Share2,
-  Zap,
-  Filter,
-  Sparkles,
-  Users,
-  Heart,
-  Play,
-  Pause
-} from '../components/icons'
-import Navigation from '../components/Navigation'
+import React from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Camera, Users, Image, Timer, Settings, Play, Pause, RotateCcw, Download, Share, Heart } from '../components/icons'
+import { useNavigate } from 'react-router-dom'
 import CameraPreview from '../components/CameraPreview'
-import { usePhotos } from '../contexts/PhotoContext'
-import type { Photo, CameraSettings, CaptureResult } from '../types'
+import Navigation from '../components/Navigation'
 
-const PhotoboothHome: React.FC = () => {
-  const { photos, addPhoto } = usePhotos()
-  const [lastPhoto, setLastPhoto] = useState<Photo | null>(null)
-  const [showPreview, setShowPreview] = useState(true)
-  const [isRecording, setIsRecording] = useState(false)
-  const [selectedMode, setSelectedMode] = useState<'photo' | 'collage' | 'burst'>('photo')
+const PhotoboothHome = () => {
+  const navigate = useNavigate()
+  const [isCapturing, setIsCapturing] = React.useState(false)
+  const [hasPhoto, setHasPhoto] = React.useState(false)
+  const [capturedPhoto, setCapturedPhoto] = React.useState<string | null>(null)
+  const [countdown, setCountdown] = React.useState(0)
 
-  const cameraSettings: CameraSettings = {
-    width: 1280,
-    height: 720,
-    timerEnabled: false,
+  // Default camera settings
+  const defaultCameraSettings = {
+    width: 1920,
+    height: 1080,
+    timerEnabled: true,
     timerDuration: 3
   }
 
-  const handlePhotoCapture = (result: CaptureResult) => {
-    if (result.success && result.imageData) {
-      // Create a photo object from the captured data
-      const newPhoto: Photo = {
-        id: Date.now().toString(),
-        url: result.imageData,
-        thumbnail: result.imageData,
-        timestamp: new Date(),
-        filename: `photo_${Date.now()}.jpg`
-      }
-      
-      addPhoto(newPhoto)
-      setLastPhoto(newPhoto)
-      setShowPreview(false)
-      setTimeout(() => setShowPreview(true), 3000)
-    } else {
-      alert(`Capture failed: ${result.error}`)
-    }
+  const startCapture = () => {
+    setCountdown(3)
+    setIsCapturing(true)
+    
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          capturePhoto()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
   }
 
-  const modes = [
-    { 
-      id: 'photo', 
-      name: 'Single Photo', 
-      icon: Camera, 
-      description: 'Take a perfect shot',
-      color: 'from-purple-500 to-pink-500'
-    },
-    { 
-      id: 'collage', 
-      name: 'Photo Collage', 
-      icon: Grid3X3, 
-      description: 'Create a story',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    { 
-      id: 'burst', 
-      name: 'Burst Mode', 
-      icon: Zap, 
-      description: 'Capture the moment',
-      color: 'from-orange-500 to-red-500'
-    }
-  ]
+  const capturePhoto = () => {
+    // Simulate photo capture
+    setTimeout(() => {
+      setIsCapturing(false)
+      setHasPhoto(true)
+      // In a real app, this would be the actual captured photo
+      setCapturedPhoto('/api/placeholder/400/300')
+    }, 500)
+  }
 
-  const features = [
-    { 
-      icon: Filter, 
-      title: 'Live Filters', 
-      description: 'Apply real-time effects',
-      link: '/demo'
+  const resetCapture = () => {
+    setHasPhoto(false)
+    setCapturedPhoto(null)
+    setCountdown(0)
+    setIsCapturing(false)
+  }
+
+  const quickFeatures = [
+    {
+      icon: Camera,
+      title: 'Camera',
+      description: 'Take instant photos',
+      action: () => navigate('/camera'),
+      color: 'from-purple-400 to-pink-400'
     },
-    { 
-      icon: Share2, 
-      title: 'Instant Share', 
-      description: 'Share to social media',
-      link: '/demo'
+    {
+      icon: Users,
+      title: 'Collage',
+      description: 'Create photo collages',
+      action: () => navigate('/collage'),
+      color: 'from-blue-400 to-purple-400'
     },
-    { 
-      icon: Download, 
-      title: 'High Quality', 
-      description: 'Download in HD',
-      link: '/gallery'
+    {
+      icon: Image,
+      title: 'Gallery',
+      description: 'View all photos',
+      action: () => navigate('/gallery'),
+      color: 'from-green-400 to-blue-400'
     },
-    { 
-      icon: Sparkles, 
-      title: 'AI Enhancement', 
-      description: 'Auto-enhance photos',
-      link: '/demo'
+    {
+      icon: Settings,
+      title: 'Settings',
+      description: 'Configure photobooth',
+      action: () => navigate('/admin'),
+      color: 'from-orange-400 to-red-400'
     }
   ]
 
   return (
-    <div className="min-h-screen bg-white font-inter">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
       <Navigation />
       
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Main Camera Section */}
-        <div className="grid lg:grid-cols-3 gap-8 mb-8">
-          {/* Camera Preview - Takes 2 columns */}
-          <div className="lg:col-span-2">
+      <div className="pt-20 px-4 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+          {/* Camera Section */}
+          <div className="space-y-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-6"
+              transition={{ duration: 0.5 }}
+              className="bg-white/70 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-white/20"
             >
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-poppins font-bold text-gray-900">Live Preview</h2>
-                  <p className="text-gray-600">Position yourself and get ready for the perfect shot</p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsRecording(!isRecording)}
-                    className={`p-3 rounded-xl transition-all duration-300 ${
-                      isRecording 
-                        ? 'bg-red-500 text-white shadow-lg' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {isRecording ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </motion.button>
-                  <Link to="/settings">
+              <div className="text-center mb-6">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                  Photo Booth
+                </h1>
+                <p className="text-gray-600 text-lg">Capture your perfect moment</p>
+              </div>
+
+              {/* Camera Preview */}
+              <div className="relative bg-gray-900 rounded-2xl overflow-hidden aspect-video mb-6">
+                <CameraPreview settings={defaultCameraSettings} />
+                
+                {/* Countdown Overlay */}
+                <AnimatePresence>
+                  {countdown > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      className="absolute inset-0 bg-black/50 flex items-center justify-center"
+                    >
+                      <motion.div
+                        key={countdown}
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 1.5, opacity: 0 }}
+                        className="text-8xl font-bold text-white"
+                      >
+                        {countdown}
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Photo Capture Overlay */}
+                <AnimatePresence>
+                  {hasPhoto && capturedPhoto && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-white flex items-center justify-center"
+                    >
+                      <img
+                        src={capturedPhoto}
+                        alt="Captured photo"
+                        className="max-w-full max-h-full object-cover rounded-lg"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Camera Controls */}
+              <div className="flex justify-center items-center space-x-4">
+                {!hasPhoto ? (
+                  <>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="p-3 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300"
+                      onClick={startCapture}
+                      disabled={isCapturing}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Settings className="w-5 h-5" />
+                      {isCapturing ? (
+                        <>
+                          <Pause className="w-6 h-6" />
+                          <span>Capturing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="w-6 h-6" />
+                          <span>Take Photo</span>
+                        </>
+                      )}
                     </motion.button>
-                  </Link>
-                </div>
-              </div>
-
-              {showPreview ? (
-                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                  <CameraPreview 
-                    settings={cameraSettings} 
-                    onCapture={handlePhotoCapture}
-                  />
-                  
-                  {/* Camera Controls Overlay */}
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    
                     <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full border-4 border-white shadow-xl flex items-center justify-center hover:bg-white transition-all duration-300"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => navigate('/camera')}
+                      className="bg-white/80 backdrop-blur-sm text-purple-600 px-6 py-4 rounded-2xl font-semibold border border-purple-200 hover:bg-white transition-all duration-200 flex items-center space-x-2"
                     >
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full"></div>
+                      <Play className="w-5 h-5" />
+                      <span>Full Camera</span>
+                    </motion.button>
+                  </>
+                ) : (
+                  <div className="flex space-x-3">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={resetCapture}
+                      className="bg-gray-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                      <span>Retake</span>
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2"
+                    >
+                      <Download className="w-5 h-5" />
+                      <span>Download</span>
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-green-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2"
+                    >
+                      <Share className="w-5 h-5" />
+                      <span>Share</span>
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="bg-red-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2"
+                    >
+                      <Heart className="w-5 h-5" />
+                      <span>Save</span>
                     </motion.button>
                   </div>
-                </div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-12"
-                >
-                  <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <Camera className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Photo Captured!</h3>
-                  {lastPhoto && (
-                    <div className="max-w-sm mx-auto mb-4">
-                      <img 
-                        src={lastPhoto.url} 
-                        alt="Captured" 
-                        className="w-full rounded-xl shadow-lg"
-                      />
-                      <p className="text-sm text-gray-600 mt-2">Saved as: {lastPhoto.filename}</p>
-                    </div>
-                  )}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowPreview(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg"
-                  >
-                    Take Another Photo
-                  </motion.button>
-                </motion.div>
-              )}
+                )}
+              </div>
             </motion.div>
           </div>
 
-          {/* Mode Selection & Stats */}
+          {/* Features Grid */}
           <div className="space-y-6">
-            {/* Mode Selection */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-white/70 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-white/20"
             >
-              <h3 className="text-lg font-poppins font-bold text-gray-900 mb-4">Capture Mode</h3>
-              <div className="space-y-3">
-                {modes.map((mode) => (
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Quick Actions</h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {quickFeatures.map((feature, index) => (
                   <motion.button
-                    key={mode.id}
-                    whileHover={{ scale: 1.02 }}
+                    key={feature.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+                    whileHover={{ scale: 1.02, y: -5 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedMode(mode.id as any)}
-                    className={`w-full p-4 rounded-xl border-2 transition-all duration-300 text-left ${
-                      selectedMode === mode.id
-                        ? 'border-purple-300 bg-purple-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white/50'
-                    }`}
+                    onClick={feature.action}
+                    className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${mode.color}`}>
-                        <mode.icon className="w-5 h-5 text-white" />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity duration-300`}></div>
+                    
+                    <div className="relative z-10 text-center">
+                      <div className={`inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br ${feature.color} rounded-xl mb-3 shadow-lg`}>
+                        <feature.icon className="w-6 h-6 text-white" />
                       </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{mode.name}</h4>
-                        <p className="text-sm text-gray-600">{mode.description}</p>
-                      </div>
+                      <h3 className="font-semibold text-gray-800 mb-1">{feature.title}</h3>
+                      <p className="text-sm text-gray-600">{feature.description}</p>
                     </div>
                   </motion.button>
                 ))}
               </div>
             </motion.div>
 
-            {/* Quick Stats */}
+            {/* Stats Section */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="bg-white/70 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-white/20"
             >
-              <h3 className="text-lg font-poppins font-bold text-gray-900 mb-4">Your Stats</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Image className="w-5 h-5 text-purple-600" />
-                    <span className="text-gray-700">Photos Taken</span>
-                  </div>
-                  <span className="font-bold text-purple-600">{photos.length}</span>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Today's Stats</h2>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">42</div>
+                  <div className="text-sm text-gray-600 mt-1">Photos Taken</div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-blue-600" />
-                    <span className="text-gray-700">Sessions</span>
-                  </div>
-                  <span className="font-bold text-blue-600">1</span>
+                <div className="text-center">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">8</div>
+                  <div className="text-sm text-gray-600 mt-1">Collages Made</div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Heart className="w-5 h-5 text-red-600" />
-                    <span className="text-gray-700">Favorites</span>
-                  </div>
-                  <span className="font-bold text-red-600">0</span>
+                <div className="text-center">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">156</div>
+                  <div className="text-sm text-gray-600 mt-1">Prints</div>
                 </div>
               </div>
             </motion.div>
+
+            {/* Tips Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-lg rounded-3xl p-6 border border-purple-200/30"
+            >
+              <h3 className="font-semibold text-purple-800 mb-3 flex items-center">
+                <Timer className="w-5 h-5 mr-2" />
+                Pro Tip
+              </h3>
+              <p className="text-purple-700 text-sm leading-relaxed">
+                For the best photos, make sure you're well-lit and positioned in the center of the frame. 
+                The countdown gives you time to get ready for the perfect shot!
+              </p>
+            </motion.div>
           </div>
         </div>
-
-        {/* Features Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mb-8"
-        >
-          <h2 className="text-2xl font-poppins font-bold text-gray-900 mb-6 text-center">
-            Powerful Features
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <Link key={index} to={feature.link}>
-                <motion.div
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-lg border border-white/20 p-6 text-center hover:shadow-xl transition-all duration-300"
-                >
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl mx-auto mb-4 flex items-center justify-center">
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-sm text-gray-600">{feature.description}</p>
-                </motion.div>
-              </Link>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Recent Photos */}
-        {photos.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-xl font-poppins font-bold text-gray-900">Recent Photos</h3>
-                <p className="text-gray-600">Your latest captures</p>
-              </div>
-              <Link
-                to="/gallery"
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 text-sm font-medium"
-              >
-                View All
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-              {photos.slice(0, 10).map((photo, index) => (
-                <motion.div
-                  key={photo.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  className="aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  <img 
-                    src={photo.thumbnail} 
-                    alt={photo.filename}
-                    className="w-full h-full object-cover"
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Empty State */}
-        {photos.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center py-12"
-          >
-            <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full mx-auto mb-6 flex items-center justify-center">
-              <Camera className="w-12 h-12 text-purple-500" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Start Your Photo Journey</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Take your first photo to begin creating amazing memories with our modern photobooth experience.
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg font-medium"
-            >
-              Take Your First Photo
-            </motion.button>
-          </motion.div>
-        )}
       </div>
     </div>
   )

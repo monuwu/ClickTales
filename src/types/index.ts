@@ -8,6 +8,15 @@ export interface Photo {
   isCollage?: boolean
 }
 
+export interface Album {
+  id: string
+  name: string
+  photoIds: string[]
+  coverPhotoId?: string
+  createdAt: Date
+  description?: string
+}
+
 export interface CameraSettings {
   width: number
   height: number

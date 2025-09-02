@@ -13,7 +13,7 @@ const Navigation: React.FC = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: '🏠' },
     { name: 'Features', path: '/#features', icon: '✨' },
-    { name: 'Camera', path: '/camera', icon: '📸' },
+    { name: 'Photobooth', path: '/photobooth', icon: '📸' },
     { name: 'Gallery', path: '/gallery', icon: '🖼️' },
   ]
 
