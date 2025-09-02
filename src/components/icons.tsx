@@ -41,11 +41,7 @@ import {
   FiMoon as Moon,
   FiSun as Sun,
   FiPlay as Play,
-  FiPause as Pause,
-  FiTrendingUp as TrendingUp,
-  FiAward as Award,
-  FiImage as ImageIcon,
-  FiClock as Clock
+  FiPause as Pause
 } from 'react-icons/fi'
 import { MdPalette as Palette, MdGrid3X3 as Grid3X3 } from 'react-icons/md'
 
@@ -94,14 +90,9 @@ export {
   Sun,
   Play,
   Pause,
-  Grid3X3,
-  TrendingUp,
-  Award,
-  ImageIcon,
-  Clock
+  Grid3X3
 }
 
 // Some additional mappings for specific names
 export const TimerIcon = Timer
-export const Image = ImageIcon
-export const Star = Sparkles
+export const Image = Camera

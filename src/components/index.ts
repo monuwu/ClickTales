@@ -5,6 +5,7 @@ export { default as PhotoShare } from './PhotoShare'
 export { default as UserProfile } from './UserProfile'
 export { default as Settings } from './Settings'
 export { default as AccessibilityHelper } from './AccessibilityHelper'
+export { default as ErrorBoundary } from './ErrorBoundary'
 export { 
   LoadingSpinner, 
   Skeleton, 
