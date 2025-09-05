@@ -1,17 +1,21 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette } from '../components/icons'
+import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette, Sparkles } from '../components/icons'
 import Timer from '../components/Timer'
-import Filters, { type Filter, filters } from '../components/Filters'
+import { Filters } from '../components'
+import type { Filter } from '../components/Filters'
+import { filters, EnhancementPanel, type EnhancementValues } from '../components/Filters'
 import CameraPermissionHelper from '../components/CameraPermissionHelper'
 import { usePhotos } from '../contexts/PhotoContext'
+import { enhanceImage, enhanceCanvasInPlace } from '../utils/enhanceImage'
 
 const CameraPage: React.FC = () => {
   const navigate = useNavigate()
   const { addPhoto } = usePhotos()
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -24,6 +28,15 @@ const CameraPage: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<Filter>(filters[0])
   const [timerDuration] = useState(3)
   const [showPermissionHelper, setShowPermissionHelper] = useState(false)
+  const [showEnhancePanel, setShowEnhancePanel] = useState(false)
+  const [enhanceValues, setEnhanceValues] = useState<EnhancementValues>({
+    brightness: 1.0,
+    contrast: 1.12,
+    saturation: 1.08,
+    shadows: 0.0,
+    sharpness: 0.55,
+    smoothing: 0.12,
+  })
 
   useEffect(() => {
     startCamera()
@@ -33,6 +46,36 @@ const CameraPage: React.FC = () => {
       }
     }
   }, [facingMode])
+
+  // Live enhancement rendering
+  useEffect(() => {
+    let raf = 0
+    const render = () => {
+      const video = videoRef.current
+      const overlay = overlayCanvasRef.current
+      const ctx = overlay ? (overlay.getContext('2d', { willReadFrequently: true } as any) as CanvasRenderingContext2D | null) : null
+      if (!video || !overlay || !ctx || isLoading || !!error) {
+        raf = requestAnimationFrame(render)
+        return
+      }
+      if (video.videoWidth && video.videoHeight) {
+        if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
+          overlay.width = video.videoWidth
+          overlay.height = video.videoHeight
+        }
+        ctx.clearRect(0, 0, overlay.width, overlay.height)
+        ctx.drawImage(video, 0, 0, overlay.width, overlay.height)
+        if (showEnhancePanel) {
+          try {
+            enhanceCanvasInPlace(ctx as CanvasRenderingContext2D, overlay.width, overlay.height, enhanceValues)
+          } catch {}
+        }
+      }
+      raf = requestAnimationFrame(render)
+    }
+    raf = requestAnimationFrame(render)
+    return () => cancelAnimationFrame(raf)
+  }, [showEnhancePanel, enhanceValues, isLoading, error])
 
   const startCamera = async () => {
     setIsLoading(true)
@@ -107,6 +150,20 @@ const CameraPage: React.FC = () => {
     navigate('/preview', { state: { imageData, filter: selectedFilter.id } })
   }
 
+  const getCurrentFrameDataUrl = (): string | null => {
+    if (!videoRef.current || !canvasRef.current) return null
+    const canvas = canvasRef.current
+    const video = videoRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    ctx.filter = selectedFilter.cssFilter || 'none'
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    ctx.filter = 'none'
+    return canvas.toDataURL('image/jpeg', 0.9)
+  }
+
   const handleCaptureClick = () => {
     if (timerEnabled) {
       setShowTimer(true)
@@ -147,6 +204,41 @@ const CameraPage: React.FC = () => {
     } else {
       startCamera()
     }
+  }
+
+  const handleEnhanceClick = async () => {
+    setShowEnhancePanel((v) => !v)
+  }
+
+  const applyEnhancement = async () => {
+    const base = getCurrentFrameDataUrl()
+    if (!base) return
+    try {
+      const enhanced = await enhanceImage(base, enhanceValues)
+      const photo = {
+        id: Date.now().toString(),
+        url: enhanced,
+        thumbnail: enhanced,
+        timestamp: new Date(),
+        filename: `enhanced-${Date.now()}.jpg`,
+        filter: selectedFilter.id,
+      }
+      addPhoto(photo)
+      navigate('/preview', { state: { imageData: enhanced, filter: selectedFilter.id } })
+    } catch (e) {
+      console.error('Enhancement failed', e)
+    }
+  }
+
+  const resetEnhancement = () => {
+    setEnhanceValues({
+      brightness: 1.0,
+      contrast: 1.12,
+      saturation: 1.08,
+      shadows: 0.0,
+      sharpness: 0.55,
+      smoothing: 0.12,
+    })
   }
 
   return (
@@ -230,6 +322,9 @@ const CameraPage: React.FC = () => {
             style={{ filter: selectedFilter.cssFilter || 'none' }}
           />
 
+          {/* Live enhancement overlay */}
+          <canvas ref={overlayCanvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+
           {/* Camera overlay effects */}
           <div className="absolute inset-0 pointer-events-none">
             {/* Corner brackets */}
@@ -279,6 +374,18 @@ const CameraPage: React.FC = () => {
             <Palette className="w-6 h-6" />
           </button>
 
+          {/* Enhance Button */}
+          <button
+            onClick={handleEnhanceClick}
+            disabled={isLoading || !!error}
+            className={`p-4 rounded-2xl transition-all duration-300 shadow-lg ${
+              'bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-purple-100/70 border border-purple-200/30'
+            }`}
+            title="AI Enhance (contrast, saturation, sharpen)"
+          >
+            <Sparkles className="w-6 h-6" />
+          </button>
+
           {/* Capture Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -320,6 +427,16 @@ const CameraPage: React.FC = () => {
         onComplete={handleTimerComplete}
         isActive={showTimer}
         onCancel={handleTimerCancel}
+      />
+
+      {/* Enhancement Panel */}
+      <EnhancementPanel
+        isVisible={showEnhancePanel}
+        values={enhanceValues}
+        onChange={setEnhanceValues}
+        onClose={() => setShowEnhancePanel(false)}
+        onApply={applyEnhancement}
+        onReset={resetEnhancement}
       />
 
       {/* Camera Permission Helper */}

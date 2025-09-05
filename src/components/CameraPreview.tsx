@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useCamera } from '../hooks/useCamera'
 import type { CameraSettings } from '../types'
 
@@ -10,19 +10,22 @@ interface CameraPreviewProps {
 const CameraPreview: React.FC<CameraPreviewProps> = ({ settings, onCapture }) => {
   const {
     videoRef,
-    isStreaming,
     error,
-    startStream,
-    stopStream,
-    capturePhoto
+    startStream
   } = useCamera(settings)
 
-  const handleCapture = () => {
-    const result = capturePhoto()
+  // Auto-start camera when component mounts
+  useEffect(() => {
+    startStream()
+  }, [startStream])
+
+  // Handle capture callback
+  React.useEffect(() => {
     if (onCapture) {
-      onCapture(result)
+      // This component now just displays the camera
+      // Capture functionality is handled by PhotoboothHome
     }
-  }
+  }, [onCapture])
 
   return (
     <div className="camera-preview">
@@ -38,32 +41,6 @@ const CameraPreview: React.FC<CameraPreviewProps> = ({ settings, onCapture }) =>
           <div className="error-overlay">
             <p>Camera Error: {error}</p>
           </div>
-        )}
-      </div>
-      
-      <div className="camera-controls">
-        {!isStreaming ? (
-          <button 
-            onClick={startStream}
-            className="control-btn start-btn"
-          >
-            Start Camera
-          </button>
-        ) : (
-          <>
-            <button 
-              onClick={handleCapture}
-              className="control-btn capture-btn"
-            >
-              📸 Take Photo
-            </button>
-            <button 
-              onClick={stopStream}
-              className="control-btn stop-btn"
-            >
-              Stop Camera
-            </button>
-          </>
         )}
       </div>
     </div>

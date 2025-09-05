@@ -1,16 +1,36 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, Users, Image, Timer, Settings, Play, Pause, RotateCcw, Download, Share, Heart } from '../components/icons'
+import { Camera, Users, Image, Timer, Settings, Play, RotateCcw, Download, Share, Heart } from '../components/icons'
 import { useNavigate } from 'react-router-dom'
 import CameraPreview from '../components/CameraPreview'
 import Navigation from '../components/Navigation'
+import { useCamera } from '../hooks/useCamera'
 
 const PhotoboothHome = () => {
   const navigate = useNavigate()
-  const [isCapturing, setIsCapturing] = React.useState(false)
   const [hasPhoto, setHasPhoto] = React.useState(false)
   const [capturedPhoto, setCapturedPhoto] = React.useState<string | null>(null)
   const [countdown, setCountdown] = React.useState(0)
+  
+  // Live statistics state
+  const [todaysStats, setTodaysStats] = React.useState<{
+    photosTaken: number;
+    collagesMade: number;
+    prints: number;
+  }>(() => {
+    // Load from localStorage or use defaults
+    const saved = localStorage.getItem('todaysStats')
+    return saved ? JSON.parse(saved) : {
+      photosTaken: 0,
+      collagesMade: 0,
+      prints: 0
+    }
+  })
+
+  // Save stats to localStorage whenever they change
+  React.useEffect(() => {
+    localStorage.setItem('todaysStats', JSON.stringify(todaysStats))
+  }, [todaysStats])
 
   // Default camera settings
   const defaultCameraSettings = {
@@ -20,37 +40,77 @@ const PhotoboothHome = () => {
     timerDuration: 3
   }
 
-  const startCapture = () => {
-    setCountdown(3)
-    setIsCapturing(true)
-    
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          capturePhoto()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+  // Use camera hook for control buttons
+  const {
+    isStreaming,
+    capturePhoto: captureFromCamera,
+    stopStream
+  } = useCamera(defaultCameraSettings)
+
+  const handleTakePhoto = () => {
+    const result = captureFromCamera()
+    if (result.success && result.imageData) {
+      setHasPhoto(true)
+      setCapturedPhoto(result.imageData)
+      // Increment photos taken counter
+      setTodaysStats(prev => ({ 
+        ...prev, 
+        photosTaken: prev.photosTaken + 1 
+      }))
+    }
   }
 
-  const capturePhoto = () => {
-    // Simulate photo capture
-    setTimeout(() => {
-      setIsCapturing(false)
-      setHasPhoto(true)
-      // In a real app, this would be the actual captured photo
-      setCapturedPhoto('/api/placeholder/400/300')
-    }, 500)
+  const handleCollageAction = () => {
+    // Increment collages made counter
+    setTodaysStats(prev => ({ 
+      ...prev, 
+      collagesMade: prev.collagesMade + 1 
+    }))
+    navigate('/collage')
+  }
+
+  const handleDownloadPhoto = () => {
+    if (capturedPhoto) {
+      // Create download link
+      const link = document.createElement('a')
+      link.href = capturedPhoto
+      link.download = `photo-${Date.now()}.jpg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Increment prints counter (downloads count as prints)
+      setTodaysStats(prev => ({ 
+        ...prev, 
+        prints: prev.prints + 1 
+      }))
+    }
+  }
+
+  const handleSharePhoto = () => {
+    // This could integrate with actual sharing APIs
+    // For now, we'll just increment prints counter
+    setTodaysStats(prev => ({ 
+      ...prev, 
+      prints: prev.prints + 1 
+    }))
+    // Add share functionality here
+    alert('Photo shared! (Feature coming soon)')
   }
 
   const resetCapture = () => {
     setHasPhoto(false)
     setCapturedPhoto(null)
     setCountdown(0)
-    setIsCapturing(false)
+  }
+
+  // Reset stats function (useful for testing or daily reset)
+  const resetTodaysStats = () => {
+    setTodaysStats({
+      photosTaken: 0,
+      collagesMade: 0,
+      prints: 0
+    })
   }
 
   const quickFeatures = [
@@ -65,7 +125,7 @@ const PhotoboothHome = () => {
       icon: Users,
       title: 'Collage',
       description: 'Create photo collages',
-      action: () => navigate('/collage'),
+      action: handleCollageAction,
       color: 'from-blue-400 to-purple-400'
     },
     {
@@ -107,7 +167,15 @@ const PhotoboothHome = () => {
 
               {/* Camera Preview */}
               <div className="relative bg-gray-900 rounded-2xl overflow-hidden aspect-video mb-6">
-                <CameraPreview settings={defaultCameraSettings} />
+                <CameraPreview 
+                  settings={defaultCameraSettings} 
+                  onCapture={(result) => {
+                    if (result.success) {
+                      setHasPhoto(true)
+                      setCapturedPhoto(result.imageData)
+                    }
+                  }}
+                />
                 
                 {/* Countdown Overlay */}
                 <AnimatePresence>
@@ -154,25 +222,17 @@ const PhotoboothHome = () => {
               <div className="flex justify-center items-center space-x-4">
                 {!hasPhoto ? (
                   <>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={startCapture}
-                      disabled={isCapturing}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-2xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isCapturing ? (
-                        <>
-                          <Pause className="w-6 h-6" />
-                          <span>Capturing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Camera className="w-6 h-6" />
-                          <span>Take Photo</span>
-                        </>
-                      )}
-                    </motion.button>
+                    {isStreaming && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleTakePhoto}
+                        className="bg-white/80 backdrop-blur-sm text-purple-600 px-6 py-4 rounded-2xl font-semibold border border-purple-200 hover:bg-white transition-all duration-200 flex items-center space-x-2"
+                      >
+                        <Camera className="w-5 h-5" />
+                        <span>Take Photo</span>
+                      </motion.button>
+                    )}
                     
                     <motion.button
                       whileHover={{ scale: 1.05 }}
@@ -183,6 +243,18 @@ const PhotoboothHome = () => {
                       <Play className="w-5 h-5" />
                       <span>Full Camera</span>
                     </motion.button>
+
+                    {isStreaming && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={stopStream}
+                        className="bg-white/80 backdrop-blur-sm text-red-600 px-6 py-4 rounded-2xl font-semibold border border-red-200 hover:bg-white transition-all duration-200 flex items-center space-x-2"
+                      >
+                        <RotateCcw className="w-5 h-5" />
+                        <span>Stop Camera</span>
+                      </motion.button>
+                    )}
                   </>
                 ) : (
                   <div className="flex space-x-3">
@@ -199,6 +271,7 @@ const PhotoboothHome = () => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      onClick={handleDownloadPhoto}
                       className="bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2"
                     >
                       <Download className="w-5 h-5" />
@@ -208,6 +281,7 @@ const PhotoboothHome = () => {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      onClick={handleSharePhoto}
                       className="bg-green-500 text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2"
                     >
                       <Share className="w-5 h-5" />
@@ -271,20 +345,63 @@ const PhotoboothHome = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="bg-white/70 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-white/20"
             >
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Today's Stats</h2>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex-1 text-center">
+                  <h2 className="text-2xl font-bold text-gray-800">Today's Stats</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date().toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                <button
+                  onClick={resetTodaysStats}
+                  className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded border border-gray-200 hover:border-gray-300 transition-colors"
+                  title="Reset stats (for testing)"
+                >
+                  Reset
+                </button>
+              </div>
               
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
-                  <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">42</div>
+                  <motion.div 
+                    key={todaysStats.photosTaken}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+                  >
+                    {todaysStats.photosTaken}
+                  </motion.div>
                   <div className="text-sm text-gray-600 mt-1">Photos Taken</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">8</div>
+                  <motion.div 
+                    key={todaysStats.collagesMade}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                  >
+                    {todaysStats.collagesMade}
+                  </motion.div>
                   <div className="text-sm text-gray-600 mt-1">Collages Made</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">156</div>
-                  <div className="text-sm text-gray-600 mt-1">Prints</div>
+                  <motion.div 
+                    key={todaysStats.prints}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent"
+                  >
+                    {todaysStats.prints}
+                  </motion.div>
+                  <div className="text-sm text-gray-600 mt-1">Downloads & Shares</div>
                 </div>
               </div>
             </motion.div>
