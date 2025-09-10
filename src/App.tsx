@@ -12,6 +12,7 @@ import Gallery from './pages/Gallery'
 import Admin from './pages/Admin'
 import ComponentDemo from './pages/ComponentDemo'
 import './App.css'
+import './theme.css'
 
 function App() {
   return (

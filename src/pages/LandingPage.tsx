@@ -1110,43 +1110,6 @@ const LandingPage: React.FC = () => {
                 ))}
               </ul>
             </motion.div>
-            
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0 }
-              }}
-            >
-              <h4 className="text-lg font-semibold mb-6">Support</h4>
-              <ul className="space-y-3">
-                {[
-                  { name: 'Help Center', path: '/help' },
-                  { name: 'Privacy Policy', path: '/privacy' },
-                  { name: 'Terms of Service', path: '/terms' },
-                  { name: 'Contact Us', path: '/contact' }
-                ].map((link, i) => (
-                  <motion.li 
-                    key={link.name}
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.05 }}
-                    viewport={{ once: true }}
-                  >
-                    <Link 
-                      to={link.path} 
-                      className="text-gray-300 hover:text-purple-400 transition-colors relative group"
-                    >
-                      <span className="relative z-10">{link.name}</span>
-                      <motion.span
-                        className="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400"
-                        whileHover={{ width: '100%' }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </Link>
-                  </motion.li>
-                ))}
-              </ul>
-            </motion.div>
           </motion.div>
           
           {/* Tech Highlights Section */}
