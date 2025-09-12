@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePhotos } from '../contexts/PhotoContext'
+import { Heart } from '../components/icons'
 import { 
   GalleryHeader, 
   PhotoGrid, 
@@ -10,10 +11,10 @@ import {
 } from '../components'
 import type { Photo, Album } from '../types'
 
-type GalleryTab = 'photos' | 'collage' | 'albums'
+type GalleryTab = 'photos' | 'favorites' | 'collage' | 'albums'
 
 const Gallery: React.FC = () => {
-  const { photos, addPhoto, deletePhoto } = usePhotos()
+  const { photos, addPhoto, deletePhoto, favoritePhotos, toggleFavoritePhoto } = usePhotos()
   const [activeTab, setActiveTab] = useState<GalleryTab>('photos')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -136,6 +137,18 @@ const Gallery: React.FC = () => {
                         </button>
                         <button
                           onClick={() => {
+                            selectedPhotos.forEach(photoId => {
+                              deletePhoto(photoId)
+                            })
+                            clearSelection()
+                          }}
+                          className="px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors duration-200"
+                          disabled={selectedPhotos.size === 0}
+                        >
+                          Delete ({selectedPhotos.size})
+                        </button>
+                        <button
+                          onClick={() => {
                             // Could add bulk operations here
                             clearSelection()
                           }}
@@ -164,6 +177,8 @@ const Gallery: React.FC = () => {
                 selectionMode={selectionMode}
                 selectedPhotos={selectedPhotos}
                 onToggleSelection={handlePhotoToggle}
+                favoritePhotos={favoritePhotos}
+                toggleFavoritePhoto={toggleFavoritePhoto}
               />
             </div>
           </motion.div>
@@ -193,6 +208,85 @@ const Gallery: React.FC = () => {
               photos={photos}
               onCreateCollage={handleCollageCreate}
             />
+          </motion.div>
+        )
+
+      case 'favorites':
+        const favoritePhotosList = photos.filter(photo => favoritePhotos.includes(photo.id))
+        return (
+          <motion.div
+            key="favorites"
+            variants={tabVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-purple-200/40 shadow-lg">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                    <Heart className="w-6 h-6 mr-2 text-red-500" />
+                    Favorite Photos
+                  </h2>
+                  <p className="text-gray-600">
+                    {favoritePhotosList.length} favorite photo{favoritePhotosList.length !== 1 ? 's' : ''} in your collection
+                  </p>
+                </div>
+
+                {favoritePhotosList.length > 0 && (
+                  <div className="flex space-x-3">
+                    {selectionMode ? (
+                      <>
+                        <button
+                          onClick={clearSelection}
+                          className="px-4 py-2 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-colors duration-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Could add bulk operations here
+                            clearSelection()
+                          }}
+                          className="px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors duration-200"
+                          disabled={selectedPhotos.size === 0}
+                        >
+                          Done ({selectedPhotos.size})
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setSelectionMode(true)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors duration-200"
+                      >
+                        Select Photos
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {favoritePhotosList.length > 0 ? (
+                <PhotoGrid
+                  photos={favoritePhotosList}
+                  onPhotoSelect={handlePhotoSelect}
+                  onPhotoDelete={handlePhotoDelete}
+                  selectionMode={selectionMode}
+                  selectedPhotos={selectedPhotos}
+                  onToggleSelection={handlePhotoToggle}
+                  favoritePhotos={favoritePhotos}
+                  toggleFavoritePhoto={toggleFavoritePhoto}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <Heart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-500 mb-2">No favorite photos yet</h3>
+                  <p className="text-gray-400">Click the heart icon on photos to add them to your favorites</p>
+                </div>
+              )}
+            </div>
           </motion.div>
         )
 

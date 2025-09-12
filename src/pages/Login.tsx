@@ -8,16 +8,22 @@ import { useAuth } from '../contexts/AuthContext'
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password')
+  const [otpStep, setOtpStep] = useState<'send' | 'verify' | '2fa'>('send')
+  const [factorId, setFactorId] = useState<string>('')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otpEmail: '',
+    otpCode: '',
+    twoFactorCode: ''
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login, register } = useAuth()
+  const { login, register, sendOtp, verifyOtp, enrollTotp, verifyTotp } = useAuth()
   const navigate = useNavigate()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,49 +33,96 @@ const Login: React.FC = () => {
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setIsLoading(true)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError('')
+  setIsLoading(true)
 
-    try {
-      if (isLogin) {
-        // Login logic
-        const success = await login(formData.email, formData.password)
-        if (success) {
-          navigate('/')
+  try {
+    if (isLogin) {
+      if (loginMode === 'password') {
+        // Password login logic
+        const result = await login(formData.email, formData.password)
+        if (result.success) {
+          // Enroll 2FA if required
+          const enrollResult = await enrollTotp()
+          if (enrollResult.success && enrollResult.data?.id) {
+            setFactorId(enrollResult.data.id)
+            setOtpStep('2fa')
+          } else {
+            navigate('/')
+          }
         } else {
-          setError('Invalid email or password')
+          setError(result.error || 'Invalid email or password')
         }
-      } else {
-        // Sign up logic
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match')
-          setIsLoading(false)
-          return
+        } else if (loginMode === 'otp') {
+          if (otpStep === 'send') {
+            // Send OTP
+            const result = await sendOtp(formData.otpEmail)
+            if (result.success) {
+              setOtpStep('verify')
+            } else {
+              setError(result.error || 'Failed to send OTP')
+            }
+          } else if (otpStep === 'verify') {
+            // Verify OTP
+            const result = await verifyOtp(formData.otpEmail, formData.otpCode)
+            if (result.success) {
+              // Enroll 2FA if required
+              const enrollResult = await enrollTotp()
+              if (enrollResult.success && enrollResult.data?.id) {
+                setFactorId(enrollResult.data.id)
+                setOtpStep('2fa')
+              } else {
+                navigate('/')
+              }
+            } else {
+              setError(result.error || 'Invalid OTP code')
+            }
+          } else if (otpStep === '2fa') {
+            // Verify 2FA
+            const result = await verifyTotp(factorId, formData.twoFactorCode)
+            if (result.success) {
+              navigate('/')
+            } else {
+              setError(result.error || 'Invalid 2FA code')
+            }
+          }
         }
-        
-        const success = await register(formData.name, formData.email, formData.password)
-        if (success) {
-          navigate('/')
-        } else {
-          setError('User with this email already exists')
-        }
+    } else {
+      // Sign up logic
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match')
+        setIsLoading(false)
+        return
       }
-    } catch {
-      setError('Authentication failed. Please try again.')
-    } finally {
-      setIsLoading(false)
+
+      const result = await register(formData.name, formData.email, formData.password)
+      if (result.success) {
+        navigate('/')
+      } else {
+        setError(result.error || 'User with this email already exists')
+      }
     }
+  } catch {
+    setError('Authentication failed. Please try again.')
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const toggleMode = () => {
     setIsLogin(!isLogin)
+    setOtpStep('send')
+    setFactorId('')
     setFormData({
       name: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      otpEmail: '',
+      otpCode: '',
+      twoFactorCode: ''
     })
     setError('')
   }
@@ -122,80 +175,204 @@ const Login: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {!isLogin && (
+                <>
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="name"
+                        name="name"
+                        type="text"
+                        required={!isLogin}
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required={!isLogin}
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required={!isLogin}
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your password"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {isLogin && (
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
+                  <label htmlFor={loginMode === 'otp' ? 'otpEmail' : 'email'} className="block text-sm font-medium text-gray-700 mb-2">
+                    {loginMode === 'otp' ? 'Email Address' : 'Email Address'}
+                  </label>
+                  {loginMode === 'otp' ? (
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="otpEmail"
+                        name="otpEmail"
+                        type="email"
+                        required
+                        value={formData.otpEmail}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your email for OTP"
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isLogin && loginMode === 'password' && (
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                    Password
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-gray-400" />
+                      <Lock className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      required={!isLogin}
-                      value={formData.name}
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={formData.password}
                       onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                      placeholder="Enter your full name"
+                      className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                      placeholder="Enter your password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      )}
+                    </button>
                   </div>
                 </div>
               )}
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                    placeholder="Enter your password"
-                  />
+              {isLogin && loginMode === 'otp' && otpStep === 'send' && (
+                <div>
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={async () => {
+                      setError('')
+                      setIsLoading(true)
+                      const result = await sendOtp(formData.otpEmail)
+                      setIsLoading(false)
+                      if (result.success) {
+                        setOtpStep('verify')
+                      } else {
+                        setError(result.error || 'Failed to send OTP')
+                      }
+                    }}
+                    className="w-full py-3 px-4 border border-purple-600 rounded-xl text-purple-600 font-semibold hover:bg-purple-50 transition"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
+                    Send OTP
                   </button>
                 </div>
-              </div>
+              )}
+
+              {isLogin && loginMode === 'otp' && otpStep === 'verify' && (
+                <div>
+                  <label htmlFor="otpCode" className="block text-sm font-medium text-gray-700 mb-2">
+                    Enter OTP Code
+                  </label>
+                  <input
+                    id="otpCode"
+                    name="otpCode"
+                    type="text"
+                    required
+                    value={formData.otpCode}
+                    onChange={handleInputChange}
+                    className="block w-full py-3 px-4 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter the OTP code"
+                  />
+                </div>
+              )}
+
+              {isLogin && otpStep === '2fa' && (
+                <div>
+                  <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-700 mb-2">
+                    Enter 2FA Code
+                  </label>
+                  <input
+                    id="twoFactorCode"
+                    name="twoFactorCode"
+                    type="text"
+                    required
+                    value={formData.twoFactorCode}
+                    onChange={handleInputChange}
+                    className="block w-full py-3 px-4 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter your 2FA code"
+                  />
+                </div>
+              )}
 
               {!isLogin && (
                 <div>
@@ -220,25 +397,27 @@ const Login: React.FC = () => {
                 </div>
               )}
 
+              {/* Login mode toggle */}
               {isLogin && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input
-                      id="remember-me"
-                      name="remember-me"
-                      type="checkbox"
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                      Remember me
-                    </label>
-                  </div>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-purple-600 hover:text-purple-500 font-medium"
+                <div className="mt-4 flex justify-center space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => setLoginMode('password')}
+                    className={`px-4 py-2 rounded-xl font-semibold transition ${
+                      loginMode === 'password' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}
                   >
-                    Forgot password?
-                  </Link>
+                    Password
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoginMode('otp')}
+                    className={`px-4 py-2 rounded-xl font-semibold transition ${
+                      loginMode === 'otp' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    OTP
+                  </button>
                 </div>
               )}
 
