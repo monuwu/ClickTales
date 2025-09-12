@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import nodemailer from 'nodemailer';
 import bodyParser from 'body-parser';
 import cors from 'cors';
@@ -21,12 +21,12 @@ const transporter = nodemailer.createTransport({
 });
 
 // Basic email format validation
-function isValidEmail(email) {
+function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
-app.post('/send-otp', async (req, res) => {
+app.post('/send-otp', async (req: Request, res: Response) => {
   console.log('Received POST /send-otp with body:', req.body);
   const { email, otpCode } = req.body;
 
