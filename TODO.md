@@ -1,0 +1,4 @@
+- [x] Fix sendOtp function in AuthContext.tsx to check response.ok before parsing JSON
+- [x] Add proper error handling for fetch failures
+- [x] Update backend to use authenticated email as from address
+- [x] Test the OTP sending functionality (OTP email sent successfully)

@@ -143,6 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ email, otpCode })
       })
 
+      if (!response.ok) {
+        throw new Error(`Failed to send OTP: ${response.status} ${response.statusText}`)
+      }
+
       const data = await response.json()
 
       if (!data.success) {

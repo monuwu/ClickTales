@@ -44,7 +44,7 @@ app.post('/send-otp', async (req: Request, res: Response) => {
   console.log('Email validation passed, sending email...');
   try {
     const mailOptions = {
-      from: '"ClickTales" <no-reply@clicktales.com>',
+      from: `"ClickTales" <${process.env.SMTP_USER || 'chahnaasumeet@gmail.com'}>`,
       to: email,
       subject: 'Your ClickTales OTP Code',
       text: `Dear User,\n\nYour ClickTales OTP code is: ${otpCode}\n\nPlease use this code to complete your verification. This code is valid for a limited time.\n\nThank you for choosing ClickTales.\n\nBest regards,\nThe ClickTales Team`,
