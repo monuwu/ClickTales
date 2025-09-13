@@ -1,5 +1,5 @@
-export default {
-  preset: 'ts-jest/presets/js-with-ts-esm',
+module.exports = {
+  preset: 'ts-jest/presets/js-with-ts',
   testEnvironment: 'jsdom',
   transform: {},
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],

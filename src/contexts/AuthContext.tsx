@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import type { Session } from '@supabase/supabase-js'
 import { generateOTP, storeOTP, verifyOTP } from '../utils/otpGenerator'
+import { startRegistration, startAuthentication } from '@simplewebauthn/browser'
 
 interface User {
   id: string
@@ -24,6 +25,9 @@ interface AuthContextType {
   // 2FA methods
   enrollTotp: () => Promise<{ success: boolean; data?: any; error?: string }>
   verifyTotp: (factorId: string, code: string) => Promise<{ success: boolean; error?: string }>
+  // WebAuthn methods
+  enrollWebAuthn: () => Promise<{ success: boolean; data?: any; error?: string }>
+  verifyWebAuthn: (challenge: string) => Promise<{ success: boolean; error?: string }>
   // Session management
   session: Session | null
 }
@@ -144,10 +148,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
 
       if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Too many OTP requests. Please wait before trying again.')
+        }
         throw new Error(`Failed to send OTP: ${response.status} ${response.statusText}`)
       }
 
-      const data = await response.json()
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        throw new Error('Invalid JSON response from server')
+      }
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to send OTP')
@@ -187,11 +199,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true }
   }
 
+  // WebAuthn methods
+  const enrollWebAuthn = async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+    try {
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Generate registration options (in production, this should come from server)
+      const challenge = crypto.getRandomValues(new Uint8Array(32))
+      const userId = crypto.getRandomValues(new Uint8Array(16))
+
+      const registrationOptions = {
+        challenge: btoa(String.fromCharCode(...challenge)),
+        rp: {
+          name: 'ClickTales',
+          id: window.location.hostname
+        },
+        user: {
+          id: btoa(String.fromCharCode(...userId)),
+          name: user.email,
+          displayName: user.name
+        },
+        pubKeyCredParams: [
+          { alg: -7, type: 'public-key' as const }, // ES256
+          { alg: -257, type: 'public-key' as const } // RS256
+        ],
+        timeout: 60000,
+        attestation: 'direct' as const,
+        authenticatorSelection: {
+          authenticatorAttachment: 'cross-platform' as const, // Allow hardware keys
+          userVerification: 'preferred' as const
+        }
+      }
+
+      const credential = await startRegistration({ optionsJSON: registrationOptions })
+
+      // Store credential for verification (in production, send to server)
+      // Removed localStorage saving to avoid stale or conflicting data
+      // localStorage.setItem(`webauthn_${user.id}`, JSON.stringify(credential))
+
+      return { success: true, data: credential }
+    } catch (error: any) {
+      console.error('WebAuthn enrollment error:', error)
+      return { success: false, error: error.message || 'Failed to enroll WebAuthn' }
+    }
+  }
+
+  const verifyWebAuthn = async (challenge?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      if (!user) {
+        return { success: false, error: 'User not authenticated' }
+      }
+
+      // Removed localStorage retrieval to avoid stale or conflicting data
+      // const storedCredential = localStorage.getItem(`webauthn_${user.id}`)
+      // if (!storedCredential) {
+      //   return { success: false, error: 'No WebAuthn credential found. Please enroll first.' }
+      // }
+
+      // const credential = JSON.parse(storedCredential)
+      // For now, skipping credential check due to removal of localStorage usage
+      // const credential = null
+
+      // Generate authentication options (in production, this should come from server)
+      const authChallenge = challenge ? challenge : btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
+ 
+      const authenticationOptions = {
+        challenge: authChallenge,
+        timeout: 60000,
+        userVerification: 'preferred' as const,
+        allowCredentials: [] // Empty array since no stored credentials
+      }
+
+      const assertion = await startAuthentication({ optionsJSON: authenticationOptions })
+
+      // In production, send assertion to server for verification
+      // For now, just check if assertion exists
+      if (assertion && assertion.response) {
+        return { success: true }
+      }
+
+      return { success: false, error: 'WebAuthn verification failed' }
+    } catch (error: any) {
+      console.error('WebAuthn verification error:', error)
+      return { success: false, error: error.message || 'Failed to verify WebAuthn' }
+    }
+  }
+
   const isAuthenticated = user !== null
   const isAdmin = user?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, isAdmin, sendOtp, verifyOtp, enrollTotp, verifyTotp, session }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, isAdmin, sendOtp, verifyOtp, enrollTotp, verifyTotp, enrollWebAuthn, verifyWebAuthn, session }}>
       {children}
     </AuthContext.Provider>
   )

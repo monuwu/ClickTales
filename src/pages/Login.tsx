@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext'
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
-  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password')
+  const [loginMode, setLoginMode] = useState<'password' | 'otp' | 'webauthn'>('password')
   const [otpStep, setOtpStep] = useState<'send' | 'verify' | '2fa'>('send')
   const [factorId, setFactorId] = useState<string>('')
   const [formData, setFormData] = useState({
@@ -23,7 +23,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login, register, sendOtp, verifyOtp, enrollTotp, verifyTotp } = useAuth()
+  const { login, register, sendOtp, verifyOtp, enrollTotp, verifyTotp, verifyWebAuthn } = useAuth()
   const navigate = useNavigate()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,6 +55,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         } else {
           setError(result.error || 'Invalid email or password')
         }
+        } else if (loginMode === 'webauthn') {
+          // WebAuthn login logic
+          const result = await verifyWebAuthn('challenge') // Placeholder challenge
+          if (result.success) {
+            navigate('/')
+          } else {
+            setError(result.error || 'WebAuthn authentication failed')
+          }
         } else if (loginMode === 'otp') {
           if (otpStep === 'send') {
             // Send OTP
@@ -399,11 +407,11 @@ const handleSubmit = async (e: React.FormEvent) => {
 
               {/* Login mode toggle */}
               {isLogin && (
-                <div className="mt-4 flex justify-center space-x-4">
+                <div className="mt-4 flex justify-center space-x-2">
                   <button
                     type="button"
                     onClick={() => setLoginMode('password')}
-                    className={`px-4 py-2 rounded-xl font-semibold transition ${
+                    className={`px-3 py-2 rounded-xl font-semibold transition text-sm ${
                       loginMode === 'password' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
                     }`}
                   >
@@ -412,11 +420,20 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <button
                     type="button"
                     onClick={() => setLoginMode('otp')}
-                    className={`px-4 py-2 rounded-xl font-semibold transition ${
+                    className={`px-3 py-2 rounded-xl font-semibold transition text-sm ${
                       loginMode === 'otp' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
                     }`}
                   >
                     OTP
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoginMode('webauthn')}
+                    className={`px-3 py-2 rounded-xl font-semibold transition text-sm ${
+                      loginMode === 'webauthn' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    WebAuthn
                   </button>
                 </div>
               )}

@@ -26,6 +26,29 @@ function isValidEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
+// Simple rate limiting: max 5 requests per email per hour
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(email: string): boolean {
+  const now = Date.now();
+  const key = email.toLowerCase();
+  const windowMs = 60 * 60 * 1000; // 1 hour
+  const maxRequests = 5;
+
+  const record = rateLimitStore.get(key);
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (record.count >= maxRequests) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
+
 app.post('/send-otp', async (req: Request, res: Response) => {
   console.log('Received POST /send-otp with body:', req.body);
   const { email, otpCode } = req.body;
@@ -41,23 +64,26 @@ app.post('/send-otp', async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Invalid email format' });
   }
 
-  console.log('Email validation passed, sending email...');
+  console.log('Checking rate limit for:', email);
+  if (!checkRateLimit(email)) {
+    console.log('Rate limit exceeded for:', email);
+    return res.status(429).json({ success: false, error: 'Too many OTP requests. Please try again later.' });
+  }
+
+  console.log('Rate limit check passed, sending email...');
   try {
     const mailOptions = {
-      from: `"ClickTales" <${process.env.SMTP_USER || 'chahnaasumeet@gmail.com'}>`,
+      from: '"ClickTales" <no-reply@clicktales.com>',
       to: email,
       subject: 'Your ClickTales OTP Code',
-      text: `Dear User,\n\nYour ClickTales OTP code is: ${otpCode}\n\nPlease use this code to complete your verification. This code is valid for a limited time.\n\nThank you for choosing ClickTales.\n\nBest regards,\nThe ClickTales Team`,
+      text: `Dear User,\n\nYour OTP code is: ${otpCode}\n\nPlease use this code to complete your verification. This code is valid for a limited time.\n\n\nThank you for choosing ClickTales.\n\nBest regards,\nThe ClickTales Team`,
       html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
-          <h2 style="color: #0078D7;">ClickTales OTP Verification</h2>
-          <p>Dear User,</p>
-          <p>Your OTP code is: <strong style="font-size: 1.5em;">${otpCode}</strong></p>
-          <p>Please use this code to complete your verification. This code is valid for a limited time.</p>
-          <br/>
-          <p>Thank you for choosing <strong>ClickTales</strong>.</p>
-          <p>Best regards,<br/>The ClickTales Team</p>
-        </div>
+        <p>Dear User,</p>
+        <p>Your OTP code is: <strong>${otpCode}</strong></p>
+        <p>Please use this code to complete your verification. This code is valid for a limited time.</p>
+        <br/>
+        <p>Thank you for choosing ClickTales.</p>
+        <p>Best regards,<br/>The ClickTales Team</p>
       `
     };
 
