@@ -1,13 +1,12 @@
-# TODO: Fix Send OTP Error and Implement WebAuthn MFA
+# TODO: Fix OTP Send Error
 
-## Tasks
-- [x] Fix "Unexpected end of JSON input" error in sendOtp function
-- [x] Update email content format (remove header)
-- [x] Install @simplewebauthn/browser package
-- [x] Implement enrollWebAuthn method in AuthContext
-- [x] Implement verifyWebAuthn method in AuthContext
-- [x] Fix TypeScript errors in server/webauthn.ts
-- [x] Update jest.config.ts for ESM compatibility
-- [x] Test sendOtp functionality (all tests passed)
-- [ ] Test WebAuthn functionality (requires hardware/browser testing)
-- [ ] Update Login.tsx to include WebAuthn option if needed
+- [x] Update vite.config.ts proxy target to 127.0.0.1 for /send-otp
+- [x] Start the OTP server on port 4000
+- [x] Test sending OTP to chahnasumeet23@gmail.com
+- [x] Verify no "Unexpected end of JSON input" error occurs
+
+# TODO: WebAuthn Implementation
+
+- [x] Implement WebAuthn enrollment and verification in AuthContext
+- [x] Mount WebAuthn router in server
+- [x] WebAuthn confirmed working by user
