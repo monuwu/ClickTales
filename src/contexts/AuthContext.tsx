@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import type { Session } from '@supabase/supabase-js'
 import { generateOTP, storeOTP, verifyOTP } from '../utils/otpGenerator'
@@ -17,6 +17,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  socialLogin: (provider: 'google' | 'facebook') => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   isAdmin: boolean
   // OTP methods
@@ -27,7 +28,8 @@ interface AuthContextType {
   verifyTotp: (factorId: string, code: string) => Promise<{ success: boolean; error?: string }>
   // WebAuthn methods
   enrollWebAuthn: () => Promise<{ success: boolean; data?: any; error?: string }>
-  verifyWebAuthn: (challenge: string) => Promise<{ success: boolean; error?: string }>
+  verifyWebAuthn: () => Promise<{ success: boolean; error?: string }>
+  hasWebAuthnCredentials: () => Promise<boolean>
   // Session management
   session: Session | null
 }
@@ -77,48 +79,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      return { success: false, error: error.message }
-    }
-    if (data?.user) {
+    try {
+      const response = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Login failed: ${response.status} ${response.statusText}`)
+      }
+
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError: any) {
+        if (parseError.message.includes("Unexpected token '<'")) {
+          throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
+        }
+        throw new Error('Invalid response from server')
+      }
+
+      if (!data.success) {
+        return { success: false, error: data.error || 'Login failed' }
+      }
       setUser({
         id: data.user.id,
-        name: data.user.user_metadata.full_name || '',
-        email: data.user.email || '',
-        username: data.user.user_metadata.username || '',
-        role: 'user'
+        name: data.user.name || '',
+        email: data.user.email,
+        username: data.user.username || '',
+        role: data.user.role
       })
       return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Login failed' }
     }
-    return { success: false, error: 'Unknown error' }
   }
 
   const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          username: email.split('@')[0]
-        }
+    try {
+      const response = await fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, username: email.split('@')[0] })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Registration failed: ${response.status} ${response.statusText}`)
       }
-    })
-    if (error) {
-      return { success: false, error: error.message }
-    }
-    if (data?.user) {
+
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError: any) {
+        if (parseError.message.includes("Unexpected token '<'")) {
+          throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
+        }
+        throw new Error('Invalid response from server')
+      }
+
+      if (!data.success) {
+        return { success: false, error: data.error || 'Registration failed' }
+      }
       setUser({
-        id: data.user.id,
+        id: data.user?.id || '',
         name,
         email,
         username: email.split('@')[0],
         role: 'user'
       })
       return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Registration failed' }
     }
-    return { success: false, error: 'Unknown error' }
+  }
+
+  const socialLogin = async (provider: 'google' | 'facebook'): Promise<{ success: boolean; error?: string }> => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: window.location.origin
+      }
+    })
+    if (error) {
+      return { success: false, error: error.message }
+    }
+    // OAuth will redirect, so success is assumed if no error
+    return { success: true }
   }
 
   const logout = async (): Promise<void> => {
@@ -156,8 +203,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       let data
       try {
-        data = await response.json()
-      } catch (parseError) {
+        const text = await response.text()
+        if (!text.trim()) {
+          throw new Error('Empty response from server')
+        }
+        data = JSON.parse(text)
+      } catch (parseError: any) {
+        if (parseError.message.includes("Unexpected token '<'")) {
+          throw new Error('Backend server not responding properly. Please ensure the OTP server is running on port 4000.')
+        }
+        if (parseError.message.includes('Unexpected end of JSON input') || parseError.message.includes('Empty response')) {
+          throw new Error('Server returned an empty or invalid response. Please check if the OTP server is running.')
+        }
         throw new Error('Invalid JSON response from server')
       }
 
@@ -206,38 +263,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'User not authenticated' }
       }
 
-      // Generate registration options (in production, this should come from server)
-      const challenge = crypto.getRandomValues(new Uint8Array(32))
-      const userId = crypto.getRandomValues(new Uint8Array(16))
-
-      const registrationOptions = {
-        challenge: btoa(String.fromCharCode(...challenge)),
-        rp: {
-          name: 'ClickTales',
-          id: window.location.hostname
-        },
-        user: {
-          id: btoa(String.fromCharCode(...userId)),
-          name: user.email,
-          displayName: user.name
-        },
-        pubKeyCredParams: [
-          { alg: -7, type: 'public-key' as const }, // ES256
-          { alg: -257, type: 'public-key' as const } // RS256
-        ],
-        timeout: 60000,
-        attestation: 'direct' as const,
-        authenticatorSelection: {
-          authenticatorAttachment: 'cross-platform' as const, // Allow hardware keys
-          userVerification: 'preferred' as const
+      // Fetch registration options from server
+      const optionsResponse = await fetch(`/webauthn/register-options?email=${encodeURIComponent(user.email)}`)
+      if (!optionsResponse.ok) {
+        throw new Error(`Failed to get registration options: ${optionsResponse.status} ${optionsResponse.statusText}`)
+      }
+      let registrationOptions
+      try {
+        registrationOptions = await optionsResponse.json()
+      } catch (parseError: any) {
+        if (parseError.message.includes("Unexpected token '<'")) {
+          throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
         }
+        throw new Error('Invalid response from server')
       }
 
+      // Start registration
       const credential = await startRegistration({ optionsJSON: registrationOptions })
 
-      // Store credential for verification (in production, send to server)
-      // Removed localStorage saving to avoid stale or conflicting data
-      // localStorage.setItem(`webauthn_${user.id}`, JSON.stringify(credential))
+      // Send credential to server for verification
+      const registerResponse = await fetch('/webauthn/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, attestationResponse: credential })
+      })
+
+      if (!registerResponse.ok) {
+        let errorData
+        try {
+          errorData = await registerResponse.json()
+        } catch (parseError: any) {
+          if (parseError.message.includes("Unexpected token '<'")) {
+            throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
+          }
+          throw new Error('Invalid response from server')
+        }
+        throw new Error(errorData.error || 'Registration failed')
+      }
+
+      let result
+      try {
+        result = await registerResponse.json()
+      } catch (parseError: any) {
+        if (parseError.message.includes("Unexpected token '<'")) {
+          throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
+        }
+        throw new Error('Invalid response from server')
+      }
+      if (!result.success) {
+        throw new Error(result.error || 'Registration failed')
+      }
 
       return { success: true, data: credential }
     } catch (error: any) {
@@ -246,44 +321,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const verifyWebAuthn = async (challenge?: string): Promise<{ success: boolean; error?: string }> => {
+  const verifyWebAuthn = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       if (!user) {
         return { success: false, error: 'User not authenticated' }
       }
 
-      // Removed localStorage retrieval to avoid stale or conflicting data
-      // const storedCredential = localStorage.getItem(`webauthn_${user.id}`)
-      // if (!storedCredential) {
-      //   return { success: false, error: 'No WebAuthn credential found. Please enroll first.' }
-      // }
-
-      // const credential = JSON.parse(storedCredential)
-      // For now, skipping credential check due to removal of localStorage usage
-      // const credential = null
-
-      // Generate authentication options (in production, this should come from server)
-      const authChallenge = challenge ? challenge : btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
- 
-      const authenticationOptions = {
-        challenge: authChallenge,
-        timeout: 60000,
-        userVerification: 'preferred' as const,
-        allowCredentials: [] // Empty array since no stored credentials
+      // Fetch authentication options from server
+      const optionsResponse = await fetch(`/webauthn/authenticate-options?email=${encodeURIComponent(user.email)}`)
+      if (!optionsResponse.ok) {
+        throw new Error(`Failed to get authentication options: ${optionsResponse.status} ${optionsResponse.statusText}`)
+      }
+      let authenticationOptions
+      try {
+        authenticationOptions = await optionsResponse.json()
+      } catch (parseError: any) {
+        if (parseError.message.includes("Unexpected token '<'")) {
+          throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
+        }
+        throw new Error('Invalid response from server')
       }
 
+      // Start authentication
       const assertion = await startAuthentication({ optionsJSON: authenticationOptions })
 
-      // In production, send assertion to server for verification
-      // For now, just check if assertion exists
-      if (assertion && assertion.response) {
-        return { success: true }
+      // Send assertion to server for verification
+      const authResponse = await fetch('/webauthn/authenticate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, assertionResponse: assertion })
+      })
+
+      if (!authResponse.ok) {
+        let errorData
+        try {
+          errorData = await authResponse.json()
+        } catch (parseError: any) {
+          if (parseError.message.includes("Unexpected token '<'")) {
+            throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
+          }
+          throw new Error('Invalid response from server')
+        }
+        throw new Error(errorData.error || 'Authentication failed')
       }
 
-      return { success: false, error: 'WebAuthn verification failed' }
+      let result
+      try {
+        result = await authResponse.json()
+      } catch (parseError: any) {
+        if (parseError.message.includes("Unexpected token '<'")) {
+          throw new Error('Backend server not responding properly. Please ensure the server is running on port 4000.')
+        }
+        throw new Error('Invalid response from server')
+      }
+      if (!result.success) {
+        throw new Error(result.error || 'Authentication failed')
+      }
+
+      return { success: true }
     } catch (error: any) {
       console.error('WebAuthn verification error:', error)
       return { success: false, error: error.message || 'Failed to verify WebAuthn' }
+    }
+  }
+
+  const hasWebAuthnCredentials = async (): Promise<boolean> => {
+    try {
+      if (!user) return false
+      const response = await fetch(`/webauthn/authenticate-options?email=${encodeURIComponent(user.email)}`)
+      return response.ok
+    } catch {
+      return false
     }
   }
 
@@ -291,7 +399,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = user?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, isAdmin, sendOtp, verifyOtp, enrollTotp, verifyTotp, enrollWebAuthn, verifyWebAuthn, session }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, register, socialLogin, logout, isAdmin, sendOtp, verifyOtp, enrollTotp, verifyTotp, enrollWebAuthn, verifyWebAuthn, hasWebAuthnCredentials, session }}>
       {children}
     </AuthContext.Provider>
   )

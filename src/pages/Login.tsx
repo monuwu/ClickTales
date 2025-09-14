@@ -23,7 +23,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login, register, sendOtp, verifyOtp, enrollTotp, verifyTotp, verifyWebAuthn } = useAuth()
+  const { login, register, socialLogin, sendOtp, verifyOtp, enrollTotp, verifyTotp, verifyWebAuthn } = useAuth()
   const navigate = useNavigate()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,31 +39,33 @@ const handleSubmit = async (e: React.FormEvent) => {
   setIsLoading(true)
 
   try {
-    if (isLogin) {
-      if (loginMode === 'password') {
-        // Password login logic
-        const result = await login(formData.email, formData.password)
-        if (result.success) {
-          // Enroll 2FA if required
-          const enrollResult = await enrollTotp()
-          if (enrollResult.success && enrollResult.data?.id) {
-            setFactorId(enrollResult.data.id)
-            setOtpStep('2fa')
-          } else {
-            navigate('/')
-          }
-        } else {
-          setError(result.error || 'Invalid email or password')
-        }
-        } else if (loginMode === 'webauthn') {
-          // WebAuthn login logic
-          const result = await verifyWebAuthn('challenge') // Placeholder challenge
-          if (result.success) {
-            navigate('/')
-          } else {
-            setError(result.error || 'WebAuthn authentication failed')
-          }
-        } else if (loginMode === 'otp') {
+        if (isLogin) {
+          if (loginMode === 'password' || loginMode === 'webauthn') {
+            // Password login logic (required for WebAuthn)
+            const result = await login(formData.email, formData.password)
+            if (result.success) {
+              if (loginMode === 'webauthn') {
+                // WebAuthn verification after password login
+                const webAuthnResult = await verifyWebAuthn()
+                if (webAuthnResult.success) {
+                  navigate('/')
+                } else {
+                  setError(webAuthnResult.error || 'WebAuthn authentication failed')
+                }
+              } else {
+                // Enroll 2FA if required
+                const enrollResult = await enrollTotp()
+                if (enrollResult.success && enrollResult.data?.id) {
+                  setFactorId(enrollResult.data.id)
+                  setOtpStep('2fa')
+                } else {
+                  navigate('/')
+                }
+              }
+            } else {
+              setError(result.error || 'Invalid email or password')
+            }
+            } else if (loginMode === 'otp') {
           if (otpStep === 'send') {
             // Send OTP
             const result = await sendOtp(formData.otpEmail)
@@ -290,7 +292,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </div>
               )}
 
-              {isLogin && loginMode === 'password' && (
+              {isLogin && (loginMode === 'password' || loginMode === 'webauthn') && (
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                     Password
@@ -476,6 +478,15 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={async () => {
+                    setError('')
+                    setIsLoading(true)
+                    const result = await socialLogin('google')
+                    setIsLoading(false)
+                    if (!result.success) {
+                      setError(result.error || 'Google login failed')
+                    }
+                  }}
                   className="w-full inline-flex justify-center py-3 px-4 rounded-xl border border-gray-300 bg-white/50 backdrop-blur-sm text-sm font-medium text-gray-500 hover:bg-white/70 transition-all duration-300"
                 >
                   <span className="flex items-center">
@@ -492,6 +503,15 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={async () => {
+                    setError('')
+                    setIsLoading(true)
+                    const result = await socialLogin('facebook')
+                    setIsLoading(false)
+                    if (!result.success) {
+                      setError(result.error || 'Facebook login failed')
+                    }
+                  }}
                   className="w-full inline-flex justify-center py-3 px-4 rounded-xl border border-gray-300 bg-white/50 backdrop-blur-sm text-sm font-medium text-gray-500 hover:bg-white/70 transition-all duration-300"
                 >
                   <span className="flex items-center">

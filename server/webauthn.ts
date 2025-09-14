@@ -1,14 +1,14 @@
 import express, { Request, Response } from 'express'
 import { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse } from '@simplewebauthn/server'
+import { getWebAuthnCredential, saveWebAuthnCredential, updateWebAuthnCounter, getWebAuthnCredentials } from './db'
 
 const router = express.Router()
 
-// In-memory store for users' WebAuthn credentials (replace with DB in production)
-const userCredentials: Record<string, any> = {}
+// In-memory store for challenges (temporary)
 const userChallenges: Record<string, any> = {}
 
 // Generate registration options for WebAuthn enrollment
-router.get('/webauthn/register-options', async (req: Request, res: Response) => {
+router.get('/register-options', async (req: Request, res: Response) => {
   const { email } = req.query
   if (typeof email !== 'string') {
     return res.status(400).json({ success: false, error: 'Email is required' })
@@ -32,7 +32,7 @@ router.get('/webauthn/register-options', async (req: Request, res: Response) => 
 })
 
 // Verify registration response from client
-router.post('/webauthn/register', async (req: Request, res: Response) => {
+router.post('/register', async (req: Request, res: Response) => {
   const { email, attestationResponse } = req.body
   if (!email || !attestationResponse) {
     return res.status(400).json({ success: false, error: 'Missing parameters' })
@@ -51,8 +51,11 @@ router.post('/webauthn/register', async (req: Request, res: Response) => {
       expectedRPID: req.hostname
     })
 
-    if (verification.verified) {
-      userCredentials[email] = verification.registrationInfo
+    if (verification.verified && verification.registrationInfo) {
+      const { credential } = verification.registrationInfo
+      const credentialID = Buffer.from(credential.id).toString('base64')
+      const credentialPublicKey = Buffer.from(credential.publicKey).toString('base64')
+      saveWebAuthnCredential(email, credentialID, credentialPublicKey)
       delete userChallenges[email]
       return res.json({ success: true })
     } else {
@@ -64,25 +67,25 @@ router.post('/webauthn/register', async (req: Request, res: Response) => {
 })
 
 // Generate authentication options for WebAuthn login
-router.get('/webauthn/authenticate-options', async (req: Request, res: Response) => {
+router.get('/authenticate-options', async (req: Request, res: Response) => {
   const { email } = req.query
   if (typeof email !== 'string') {
     return res.status(400).json({ success: false, error: 'Email is required' })
   }
 
-  const userCred = userCredentials[email]
-  if (!userCred) {
+  const userCreds = getWebAuthnCredentials(email)
+  if (!userCreds || userCreds.length === 0) {
     return res.status(400).json({ success: false, error: 'User has no registered credentials' })
   }
 
+  const allowCredentials = userCreds.map((cred: any) => ({
+    id: cred.credential_id,
+    transports: ['usb', 'ble', 'nfc', 'internal'] as any
+  }))
+
   const options = await generateAuthenticationOptions({
     rpID: req.hostname,
-    allowCredentials: [
-      {
-        id: userCred.credentialID,
-        transports: ['usb', 'ble', 'nfc', 'internal']
-      }
-    ],
+    allowCredentials,
     userVerification: 'preferred'
   })
 
@@ -99,21 +102,29 @@ router.post('/webauthn/authenticate', async (req: Request, res: Response) => {
   }
 
   const expectedChallenge = userChallenges[email]
-  const userCred = userCredentials[email]
-  if (!expectedChallenge || !userCred) {
+  const userCreds = getWebAuthnCredentials(email)
+  if (!expectedChallenge || !userCreds || userCreds.length === 0) {
     return res.status(400).json({ success: false, error: 'No challenge or credentials found for user' })
   }
 
   try {
+    // For simplicity, use the first credential for verification
+    const credential: any = userCreds[0]
     const verification = await verifyAuthenticationResponse({
       response: assertionResponse,
       expectedChallenge,
       expectedOrigin: `http://${req.hostname}:5173`,
       expectedRPID: req.hostname,
-      credential: userCred
+      credential: {
+        id: Buffer.from(credential.credential_id, 'base64'),
+        publicKey: Buffer.from(credential.public_key, 'base64'),
+        counter: credential.counter
+      } as any
     })
 
     if (verification.verified) {
+      // Update counter in DB
+      updateWebAuthnCounter(email, credential.credential_id, verification.authenticationInfo.newCounter)
       delete userChallenges[email]
       // Here you would create a session or JWT token for the user
       return res.json({ success: true })
