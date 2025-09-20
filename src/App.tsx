@@ -11,6 +11,8 @@ import PhotoboothHome from './pages/PhotoboothHome'
 import Gallery from './pages/Gallery'
 import Admin from './pages/Admin'
 import ComponentDemo from './pages/ComponentDemo'
+import Profile from './pages/Profile'
+import Settings from './pages/Settings'
 import './App.css'
 import './theme.css'
 
@@ -29,6 +31,8 @@ function App() {
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/login" element={<Login />} />
               <Route path="/profile-setup" element={<ProfileSetup />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/demo" element={<ComponentDemo />} />
             </Routes>

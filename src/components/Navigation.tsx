@@ -56,7 +56,7 @@ const Navigation: React.FC = () => {
       }`}
       aria-label="Toggle theme"
     >
-      <svg width={18} height={18} viewBox="0 0 20 20" fill="currentColor">
+      <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor">
         {darkMode ? (
           // Sun icon
           <>

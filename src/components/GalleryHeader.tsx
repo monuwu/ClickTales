@@ -17,9 +17,9 @@ const GalleryHeader: React.FC<GalleryHeaderProps> = ({ activeTab, onTabChange })
 
   return (
     <div className="relative bg-white/80 backdrop-blur-xl border-b border-purple-200/40 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-6 pt-6 pb-4">
         {/* Header Row */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <Link to="/">
               <motion.button
@@ -34,7 +34,7 @@ const GalleryHeader: React.FC<GalleryHeaderProps> = ({ activeTab, onTabChange })
           </div>
 
           <motion.h1 
-            className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"
+            className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent leading-tight"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}

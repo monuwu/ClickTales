@@ -28,18 +28,20 @@ const CameraPreview: React.FC<CameraPreviewProps> = ({ settings, onCapture }) =>
   }, [onCapture])
 
   return (
-    <div className="camera-preview">
-      <div className="video-container">
+    <div className="absolute inset-0 w-full h-full">
+      <div className="relative w-full h-full">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="camera-video"
+          className="w-full h-full object-cover"
         />
         {error && (
-          <div className="error-overlay">
-            <p>Camera Error: {error}</p>
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+            <div className="bg-red-500/90 text-white px-4 py-2 rounded-lg">
+              <p>Camera Error: {error}</p>
+            </div>
           </div>
         )}
       </div>
