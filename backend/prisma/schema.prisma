@@ -16,9 +16,11 @@ model User {
   username    String   @unique
   name        String
   password    String
+  phoneNumber String?
   avatar      String?
   role        Role     @default(USER)
   isActive    Boolean  @default(true)
+  isVerified  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   lastLoginAt DateTime?
@@ -189,11 +191,11 @@ model SystemSettings {
 model OtpVerification {
   id        String   @id @default(cuid())
   userId    String
-  code      String   // 6-digit OTP code
-  type      OtpType  // LOGIN, ENABLE_2FA, DISABLE_2FA, PASSWORD_RESET
+  otpCode   String   // 6-digit OTP code
+  type      OtpType  // SIGNUP, LOGIN, ENABLE_2FA, DISABLE_2FA, PASSWORD_RESET
   expiresAt DateTime
   createdAt DateTime @default(now())
-  isUsed    Boolean  @default(false)
+  used      Boolean  @default(false)
   
   // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -208,6 +210,7 @@ enum Role {
 }
 
 enum OtpType {
+  SIGNUP
   LOGIN
   ENABLE_2FA
   DISABLE_2FA

@@ -61,6 +61,14 @@ export interface CreateUserDto {
   username: string;
   name: string;
   password: string;
+  phoneNumber?: string | undefined;
+}
+
+export interface SignupRequestDto {
+  email: string;
+  username: string;
+  password: string;
+  phoneNumber?: string;
 }
 
 export interface UpdateUserDto {
@@ -191,6 +199,30 @@ export interface ImageProcessingOptions {
   format?: 'jpeg' | 'png' | 'webp';
   createThumbnail?: boolean;
   thumbnailSize?: number;
+}
+
+// System Settings types
+export interface CreateSystemSettingDto {
+  key: string;
+  value: string;
+  description?: string;
+  type?: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'JSON';
+}
+
+export interface UpdateSystemSettingDto {
+  value: string;
+  description?: string;
+  type?: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'JSON';
+}
+
+export interface SystemSettingsResponse {
+  id: string;
+  key: string;
+  value: string;
+  description?: string;
+  type: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'JSON';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Error types

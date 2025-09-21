@@ -9,6 +9,10 @@ router.post('/register', AuthController.validateRegister, AuthController.registe
 router.post('/login', AuthController.validateLogin, AuthController.login);
 router.post('/refresh', AuthController.refreshToken);
 
+// Signup OTP routes
+router.post('/request-signup-otp', AuthController.validateSignupRequest, AuthController.requestSignupOtp);
+router.post('/verify-signup-otp', AuthController.validateVerifySignupOtp, AuthController.verifySignupOtp);
+
 // OTP routes
 router.post('/request-otp', AuthController.requestOtp);
 router.post('/verify-otp', AuthController.verifyOtp);

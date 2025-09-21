@@ -17,7 +17,7 @@ router.get('/user/me', PhotoController.getUserPhotos);
 router.put('/:id', PhotoController.updatePhoto);
 router.delete('/:id', PhotoController.deletePhoto);
 
-// Upload route will be implemented with file upload middleware
-// router.post('/', upload.single('photo'), PhotoController.uploadPhoto);
+// Photo upload route with file upload middleware
+router.post('/', upload.single('photo'), PhotoController.uploadPhoto);
 
 export default router;

@@ -49,7 +49,7 @@ export class OtpService {
   /**
    * Create and store OTP in database
    */
-  async createOtp(userId: string, type: 'LOGIN' | 'ENABLE_2FA' | 'DISABLE_2FA' | 'PASSWORD_RESET'): Promise<string> {
+  async createOtp(userId: string, type: 'SIGNUP' | 'LOGIN' | 'ENABLE_2FA' | 'DISABLE_2FA' | 'PASSWORD_RESET'): Promise<string> {
     const code = this.generateOtpCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
@@ -58,7 +58,7 @@ export class OtpService {
       where: {
         userId,
         type,
-        isUsed: false
+        used: false
       }
     });
 
@@ -66,7 +66,7 @@ export class OtpService {
     await prisma.otpVerification.create({
       data: {
         userId,
-        code,
+        otpCode: code,
         type,
         expiresAt
       }

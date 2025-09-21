@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { promises as fs } from 'fs';
 import { AuthenticatedRequest, ApiResponse, PaginatedResponse, PhotoFilters, UpdatePhotoDto, AppError, ErrorCodes, PaginationOptions } from '../types';
 import { asyncHandler } from '../middleware/errorHandler';
 
@@ -301,5 +302,115 @@ export class PhotoController {
     };
 
     return res.json(response);
+  });
+
+  static uploadPhoto = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new AppError('Authentication required', ErrorCodes.UNAUTHORIZED);
+      }
+
+      const file = req.file;
+      if (!file) {
+        throw new AppError('No file uploaded', ErrorCodes.VALIDATION_ERROR);
+      }
+
+      // Validate file type
+      if (!file.mimetype.startsWith('image/')) {
+        throw new AppError('Only image files are allowed', ErrorCodes.VALIDATION_ERROR);
+      }
+
+      // Get additional metadata from request body
+      const { tags, location, device, isPublic = false, sessionId } = req.body;
+
+      // Parse tags if provided as string
+      let parsedTags: string[] = [];
+      if (tags) {
+        try {
+          parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+        } catch {
+          parsedTags = typeof tags === 'string' ? [tags] : tags;
+        }
+      }
+
+      // Create photo record in database
+      const photo = await prisma.photo.create({
+        data: {
+          filename: file.filename,
+          originalName: file.originalname,
+          url: `/uploads/${file.filename}`,
+          size: file.size,
+          mimeType: file.mimetype,
+          location: location || null,
+          device: device || null,
+          isFeatured: false,
+          isPublic: Boolean(isPublic),
+          tags: parsedTags,
+          userId,
+          sessionId: sessionId || null,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+            }
+          },
+          session: sessionId ? {
+            select: {
+              id: true,
+              sessionName: true,
+            }
+          } : false,
+        }
+      });
+
+      // If photo is part of a session, increment the photo count
+      if (sessionId) {
+        await prisma.photoboothSession.update({
+          where: { id: sessionId },
+          data: {
+            photosTaken: {
+              increment: 1
+            }
+          }
+        });
+      }
+
+      const response: ApiResponse = {
+        success: true,
+        message: 'Photo uploaded successfully',
+        data: { photo }
+      };
+
+      return res.status(201).json(response);
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      
+      // Clean up uploaded file if database operation failed
+      if (req.file) {
+        try {
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          console.error('Failed to clean up uploaded file:', unlinkError);
+        }
+      }
+
+      if (error instanceof AppError) {
+        const response: ApiResponse = {
+          success: false,
+          message: error.message
+        };
+        return res.status(error.statusCode).json(response);
+      }
+
+      const response: ApiResponse = {
+        success: false,
+        message: 'Failed to upload photo'
+      };
+      return res.status(ErrorCodes.INTERNAL_SERVER).json(response);
+    }
   });
 }

@@ -12,6 +12,8 @@ import authRoutes from './routes/auth';
 import photoRoutes from './routes/photos';
 import albumRoutes from './routes/albums';
 import sessionRoutes from './routes/sessions';
+import collageRoutes from './routes/collages';
+import settingsRoutes from './routes/settings';
 
 // Import middleware
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -78,6 +80,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/photos', photoRoutes);
 app.use('/api/albums', albumRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/collages', collageRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // API documentation route
 app.get('/api', (req, res) => {

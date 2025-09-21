@@ -41,6 +41,7 @@ export class AuthService {
       data: {
         ...userData,
         password: hashedPassword,
+        phoneNumber: userData.phoneNumber !== undefined ? userData.phoneNumber : null,
       },
       select: {
         id: true,
@@ -278,8 +279,56 @@ export class AuthService {
         avatar: true,
         twoFactorEnabled: true,
         isActive: true,
+        isVerified: true,
       }
     });
+  }
+
+  static async findUserByUsername(username: string): Promise<any> {
+    return await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        avatar: true,
+        twoFactorEnabled: true,
+        isActive: true,
+        password: true,
+      }
+    });
+  }
+
+  static async createUnverifiedUser(userData: CreateUserDto): Promise<any> {
+    // Hash password
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
+
+    // Create user with isVerified=false
+    const user = await prisma.user.create({
+      data: {
+        email: userData.email,
+        username: userData.username,
+        name: userData.name,
+        password: hashedPassword,
+        phoneNumber: userData.phoneNumber || null,
+        isVerified: false,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        avatar: true,
+        isVerified: true,
+        isActive: true,
+      }
+    });
+
+    return user;
   }
 
   static async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
@@ -331,5 +380,80 @@ export class AuthService {
         backupCodes: null
       }
     });
+  }
+
+  static async verifySignupOtp(userId: string, otpCode: string): Promise<AuthResponse> {
+    // Find the user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        avatar: true,
+        isActive: true,
+        isVerified: true,
+      }
+    });
+
+    if (!user) {
+      throw new AppError('User not found', ErrorCodes.NOT_FOUND);
+    }
+
+    if (user.isVerified) {
+      throw new AppError('Account is already verified', ErrorCodes.VALIDATION_ERROR);
+    }
+
+    // Find and verify the OTP
+    const otpRecord = await prisma.otpVerification.findFirst({
+      where: {
+        userId: userId,
+        otpCode: otpCode,
+        type: 'SIGNUP',
+        used: false,
+        expiresAt: {
+          gte: new Date()
+        }
+      }
+    });
+
+    if (!otpRecord) {
+      throw new AppError('Invalid or expired OTP code', ErrorCodes.VALIDATION_ERROR);
+    }
+
+    // Mark OTP as used and activate user account
+    await prisma.$transaction([
+      prisma.otpVerification.update({
+        where: { id: otpRecord.id },
+        data: { used: true }
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { 
+          isVerified: true,
+          isActive: true,
+          lastLoginAt: new Date()
+        }
+      })
+    ]);
+
+    // Generate tokens for immediate login
+    const accessToken = this.generateToken(user);
+    const refreshToken = this.generateRefreshToken(user);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        ...(user.avatar && { avatar: user.avatar })
+      },
+      token: accessToken,
+      refreshToken,
+    };
   }
 }

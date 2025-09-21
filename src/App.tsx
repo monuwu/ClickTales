@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import ProfileSetup from './pages/ProfileSetup'
 import PhotoboothHome from './pages/PhotoboothHome'
 import Gallery from './pages/Gallery'
+import CollagePage from './pages/CollagePage'
 import Admin from './pages/Admin'
 import ComponentDemo from './pages/ComponentDemo'
 import Profile from './pages/Profile'
@@ -46,6 +47,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/camera" element={<CameraPage />} />
             <Route path="/preview" element={<PreviewPage />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/collage" element={<CollagePage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
             <Route path="/profile" element={<Profile />} />
