@@ -1,21 +1,24 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Camera, Mail, Lock, Eye, EyeOff, User, ArrowRight } from '../components/icons'
+import { Camera, Mail, Lock, Eye, EyeOff, User, ArrowRight, Shield } from '../components/icons'
 import Navigation from '../components/Navigation'
 import { useAuth } from '../contexts/AuthContext'
 
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+  const [showOtpInput, setShowOtpInput] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otpCode: ''
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false)
 
   const { login, register } = useAuth()
   const navigate = useNavigate()
@@ -34,12 +37,35 @@ const Login: React.FC = () => {
 
     try {
       if (isLogin) {
-        // Login logic
-        const success = await login(formData.email, formData.password)
-        if (success) {
-          navigate('/')
+        // Login logic with OTP support
+        const loginData = {
+          email: formData.email,
+          password: formData.password,
+          ...(formData.otpCode && { otpCode: formData.otpCode })
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/auth/login-with-otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(loginData),
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          if (result.requiresOtp && !showOtpInput) {
+            // User has 2FA enabled but hasn't entered OTP yet
+            await requestOtp()
+            setShowOtpInput(true)
+            setError('Please enter the verification code sent to your email')
+          } else {
+            // Login successful
+            navigate('/')
+          }
         } else {
-          setError('Invalid email or password')
+          setError(result.message || 'Invalid email or password')
         }
       } else {
         // Sign up logic
@@ -48,15 +74,25 @@ const Login: React.FC = () => {
           setIsLoading(false)
           return
         }
+
+        // Generate username from email if not provided
+        const username = formData.email.split('@')[0]
         
-        const success = await register(formData.name, formData.email, formData.password)
-        if (success) {
+        const result = await register({
+          name: formData.name,
+          email: formData.email,
+          username: username,
+          password: formData.password
+        })
+        
+        if (result.success) {
           navigate('/')
         } else {
-          setError('User with this email already exists')
+          setError(result.error || 'Registration failed. Please try again.')
         }
       }
-    } catch {
+    } catch (error) {
+      console.error('Authentication error:', error)
       setError('Authentication failed. Please try again.')
     } finally {
       setIsLoading(false)
@@ -69,9 +105,49 @@ const Login: React.FC = () => {
       name: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      otpCode: ''
     })
     setError('')
+    setShowOtpInput(false)
+  }
+
+  const requestOtp = async () => {
+    if (!formData.email) {
+      setError('Please enter your email address')
+      return
+    }
+
+    setIsRequestingOtp(true)
+    setError('')
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/auth/request-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          type: 'LOGIN'
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setShowOtpInput(true)
+        setError('')
+        // You could show a success message here
+      } else {
+        setError(data.message || 'Failed to send OTP')
+      }
+    } catch (error) {
+      console.error('OTP request error:', error)
+      setError('Failed to send OTP. Please try again.')
+    } finally {
+      setIsRequestingOtp(false)
+    }
   }
 
   return (
@@ -220,6 +296,46 @@ const Login: React.FC = () => {
                 </div>
               )}
 
+              {isLogin && showOtpInput && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <label htmlFor="otpCode" className="block text-sm font-medium text-gray-700 mb-2">
+                    Verification Code
+                    <span className="text-xs text-gray-500 ml-2">(Check your email)</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Shield className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="otpCode"
+                      name="otpCode"
+                      type="text"
+                      maxLength={6}
+                      pattern="[0-9]{6}"
+                      value={formData.otpCode}
+                      onChange={handleInputChange}
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-center text-lg font-mono tracking-widest"
+                      placeholder="000000"
+                    />
+                  </div>
+                  <div className="mt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={requestOtp}
+                      disabled={isRequestingOtp}
+                      className="text-sm text-purple-600 hover:text-purple-500 font-medium disabled:opacity-50"
+                    >
+                      {isRequestingOtp ? 'Sending...' : 'Resend Code'}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
               {isLogin && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
@@ -233,12 +349,24 @@ const Login: React.FC = () => {
                       Remember me
                     </label>
                   </div>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-purple-600 hover:text-purple-500 font-medium"
-                  >
-                    Forgot password?
-                  </Link>
+                  <div className="flex flex-col space-y-2">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-purple-600 hover:text-purple-500 font-medium"
+                    >
+                      Forgot password?
+                    </Link>
+                    {!showOtpInput && (
+                      <button
+                        type="button"
+                        onClick={requestOtp}
+                        disabled={isRequestingOtp || !formData.email}
+                        className="text-sm text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isRequestingOtp ? 'Sending...' : 'Need 2FA code?'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 

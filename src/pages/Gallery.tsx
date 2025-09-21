@@ -1,21 +1,19 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePhotos } from '../contexts/PhotoContext'
 import { 
   GalleryHeader, 
   PhotoGrid, 
-  CollageSection, 
-  AlbumManager, 
-  exportAlbumToPDF 
+  CollageSection
 } from '../components'
-import type { Photo, Album } from '../types'
+import type { Photo } from '../types'
 
 type GalleryTab = 'photos' | 'collage' | 'albums'
 
 const Gallery: React.FC = () => {
   const { photos, addPhoto, deletePhoto } = usePhotos()
   const [activeTab, setActiveTab] = useState<GalleryTab>('photos')
-  const [isLoading, setIsLoading] = useState(false)
 
   // Handle photo selection for various operations
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
@@ -73,22 +71,6 @@ const Gallery: React.FC = () => {
     }
     
     addPhoto(collagePhoto)
-  }
-
-  const handleAlbumExportPDF = async (album: Album) => {
-    try {
-      setIsLoading(true)
-      await exportAlbumToPDF(album, photos, {
-        photosPerPage: 4,
-        includeMetadata: true,
-        quality: 0.8
-      })
-    } catch (error) {
-      console.error('Failed to export album to PDF:', error)
-      alert('Failed to export album to PDF. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
   }
 
   const clearSelection = () => {
@@ -216,10 +198,28 @@ const Gallery: React.FC = () => {
               </div>
             </div>
 
-            <AlbumManager
-              photos={photos}
-              onExportAlbumPDF={handleAlbumExportPDF}
-            />
+            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 border border-purple-200/40 shadow-lg text-center">
+              <div className="mb-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Album Management</h3>
+                <p className="text-gray-600 mb-6">
+                  Create, organize, and manage your photo albums with our dedicated Albums page.
+                </p>
+                <Link 
+                  to="/albums"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  Go to Albums
+                </Link>
+              </div>
+            </div>
           </motion.div>
         )
 
@@ -243,25 +243,6 @@ const Gallery: React.FC = () => {
             {renderTabContent()}
           </AnimatePresence>
         </div>
-
-        {/* Loading Overlay */}
-        <AnimatePresence>
-          {isLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
-            >
-              <div className="bg-white rounded-2xl p-8 shadow-2xl">
-                <div className="flex items-center space-x-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                  <span className="text-gray-700 font-medium">Exporting PDF...</span>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   )

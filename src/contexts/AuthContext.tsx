@@ -1,141 +1,149 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-
-interface User {
-  id: string
-  name: string
-  email: string
-  username: string
-  role: 'admin' | 'user'
-}
-
-interface StoredUser extends User {
-  password: string
-}
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { authAPI, type User, type AuthResponse } from '../services/api'
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
-  login: (username: string, password: string) => Promise<boolean>
-  register: (name: string, email: string, password: string) => Promise<boolean>
-  logout: () => void
+  loading: boolean
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  register: (userData: { name: string, email: string, username: string, password: string }) => Promise<{ success: boolean; error?: string }>
+  logout: () => Promise<void>
+  refreshUser: () => Promise<void>
   isAdmin: boolean
+  isModerator: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
 
-  // Load user from localStorage on mount
+  // Load user from token on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem('photobooth-user')
-    if (savedUser) {
+    const initializeAuth = async () => {
       try {
-        const parsedUser = JSON.parse(savedUser)
-        setUser(parsedUser)
+        if (authAPI.isAuthenticated()) {
+          // Get user from token first (fast)
+          const tokenUser = authAPI.getCurrentUser()
+          if (tokenUser) {
+            setUser(tokenUser)
+          }
+
+          // Then fetch fresh profile data
+          const profileResponse = await authAPI.getProfile()
+          if (profileResponse.success && profileResponse.data) {
+            setUser(profileResponse.data.user)
+          } else if (!profileResponse.success) {
+            // Token might be invalid, clear it
+            setUser(null)
+          }
+        }
       } catch (error) {
-        console.error('Failed to load saved user:', error)
+        console.error('Failed to initialize auth:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
       }
+    }
+
+    initializeAuth()
+  }, [])
+
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true)
+      const response: AuthResponse = await authAPI.login(email, password)
+      
+      if (response.success && response.data) {
+        setUser(response.data.user)
+        return { success: true }
+      } else {
+        return { 
+          success: false, 
+          error: response.error || response.message || 'Login failed' 
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Login failed' 
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const register = async (userData: { 
+    name: string
+    email: string
+    username: string
+    password: string 
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true)
+      const response: AuthResponse = await authAPI.register(userData)
+      
+      if (response.success && response.data) {
+        setUser(response.data.user)
+        return { success: true }
+      } else {
+        return { 
+          success: false, 
+          error: response.error || response.message || 'Registration failed' 
+        }
+      }
+    } catch (error) {
+      console.error('Registration error:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Registration failed' 
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const logout = async (): Promise<void> => {
+    try {
+      await authAPI.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setUser(null)
+    }
+  }
+
+  const refreshUser = useCallback(async (): Promise<void> => {
+    try {
+      if (authAPI.isAuthenticated()) {
+        const response = await authAPI.getProfile()
+        if (response.success && response.data) {
+          setUser(response.data.user)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error)
     }
   }, [])
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // Get stored users from localStorage
-    const storedUsers = localStorage.getItem('photobooth-users')
-    
-    let parsedUsers: StoredUser[] = []
-    if (storedUsers) {
-      try {
-        parsedUsers = JSON.parse(storedUsers)
-      } catch (error) {
-        console.error('Failed to parse stored users:', error)
-      }
-    }
-
-    // Add default mock users if no users exist
-    const users: StoredUser[] = parsedUsers.length === 0 ? [
-      { id: '1', name: 'Admin User', email: 'admin@clicktales.com', username: 'admin', password: 'admin123', role: 'admin' },
-      { id: '2', name: 'Test User', email: 'user@clicktales.com', username: 'user', password: 'user123', role: 'user' }
-    ] : parsedUsers
-
-    if (parsedUsers.length === 0) {
-      localStorage.setItem('photobooth-users', JSON.stringify(users))
-    }
-
-    // Find user by email or username
-    const foundUser = users.find((u: StoredUser) => 
-      (u.email === username || u.username === username) && u.password === password
-    )
-    
-    if (foundUser) {
-      const userWithoutPassword = { 
-        id: foundUser.id, 
-        name: foundUser.name,
-        email: foundUser.email,
-        username: foundUser.username, 
-        role: foundUser.role 
-      }
-      setUser(userWithoutPassword)
-      localStorage.setItem('photobooth-user', JSON.stringify(userWithoutPassword))
-      return true
-    }
-    
-    return false
-  }
-
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    try {
-      // Get existing users
-      const storedUsers = localStorage.getItem('photobooth-users')
-      const users: StoredUser[] = storedUsers ? JSON.parse(storedUsers) : []
-
-      // Check if user already exists
-      const existingUser = users.find((u: StoredUser) => u.email === email)
-      if (existingUser) {
-        return false // User already exists
-      }
-
-      // Create new user
-      const newUser = {
-        id: Date.now().toString(),
-        name,
-        email,
-        username: email.split('@')[0], // Use email prefix as username
-        password,
-        role: 'user' as const
-      }
-
-      users.push(newUser)
-      localStorage.setItem('photobooth-users', JSON.stringify(users))
-
-      // Auto-login the new user
-      const userWithoutPassword = {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        username: newUser.username,
-        role: newUser.role
-      }
-      setUser(userWithoutPassword)
-      localStorage.setItem('photobooth-user', JSON.stringify(userWithoutPassword))
-      
-      return true
-    } catch (error) {
-      console.error('Registration failed:', error)
-      return false
-    }
-  }
-
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('photobooth-user')
-  }
-
-  const isAuthenticated = user !== null
-  const isAdmin = user?.role === 'admin'
+  const isAuthenticated = user !== null && authAPI.isAuthenticated()
+  const isAdmin = user?.role === 'ADMIN'
+  const isModerator = user?.role === 'MODERATOR' || isAdmin
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, isAdmin }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated, 
+      loading, 
+      login, 
+      register, 
+      logout, 
+      refreshUser,
+      isAdmin,
+      isModerator
+    }}>
       {children}
     </AuthContext.Provider>
   )
