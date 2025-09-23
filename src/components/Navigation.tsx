@@ -3,13 +3,17 @@ import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, User, Settings, LogOut, Sparkles } from './icons'
 import { useAuth } from '../contexts/AuthContext'
+import SyncIndicator from './SyncIndicator'
+import useSyncStatus from '../hooks/useSyncStatus'
 
 const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const location = useLocation()
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, logout } = useAuth()
+  const { status, pendingUploads, lastSyncTime } = useSyncStatus()
+  const isAuthenticated = !!user
 
   // Theme toggle functionality
   useEffect(() => {
@@ -144,6 +148,17 @@ const Navigation: React.FC = () => {
 
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* Sync Status - Only show for authenticated users */}
+            {isAuthenticated && (
+              <SyncIndicator 
+                status={status}
+                pendingCount={pendingUploads}
+                lastSyncTime={lastSyncTime || undefined}
+                showText={false}
+                className="ml-2"
+              />
+            )}
 
             {/* User Actions */}
             {isAuthenticated ? (

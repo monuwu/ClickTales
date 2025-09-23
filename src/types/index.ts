@@ -4,7 +4,7 @@ export * from './album'
 export interface Photo {
   id: string
   url: string
-  thumbnail: string
+  thumbnail?: string
   timestamp: Date
   filename: string
   filter?: string

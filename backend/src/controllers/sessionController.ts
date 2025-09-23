@@ -118,11 +118,11 @@ export class SessionController {
       const totalPages = Math.ceil(total / limit);
 
       res.json({
-        success: true,
-        message: 'Sessions retrieved successfully',
-        data: sessions,
-        pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
-      } as ApiResponse);
+          success: true,
+          message: 'Sessions retrieved successfully',
+          data: sessions,
+          pagination: { page, limit, total, totalPages, hasNext: page < totalPages, hasPrev: page > 1 },
+      } as unknown as ApiResponse);
     } catch (error) {
       console.error('Error fetching sessions:', error);
       res.status(500).json({ success: false, message: 'Failed to fetch sessions' } as ApiResponse);

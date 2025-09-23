@@ -1,153 +1,26 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { authAPI, type User, type AuthResponse } from '../services/api'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../services/supabase'
+import type { Session } from '@supabase/supabase-js'
+
+interface User {
+  id: string
+  email: string
+  name?: string
+}
 
 interface AuthContextType {
   user: User | null
-  isAuthenticated: boolean
-  loading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  register: (userData: { name: string, email: string, username: string, password: string }) => Promise<{ success: boolean; error?: string }>
+  session: Session | null
+  isLoading: boolean
+  login: (email: string, password: string) => Promise<boolean>
+  register: (name: string, email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
-  refreshUser: () => Promise<void>
-  isAdmin: boolean
-  isModerator: boolean
+  sendSignupOTP: (name: string, email: string, password: string) => Promise<void>
+  verifyOTP: (email: string, otp: string) => Promise<void>
+  resendOTP: (email: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-
-  // Load user from token on mount
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        if (authAPI.isAuthenticated()) {
-          // Get user from token first (fast)
-          const tokenUser = authAPI.getCurrentUser()
-          if (tokenUser) {
-            setUser(tokenUser)
-          }
-
-          // Then fetch fresh profile data
-          const profileResponse = await authAPI.getProfile()
-          if (profileResponse.success && profileResponse.data) {
-            setUser(profileResponse.data.user)
-          } else if (!profileResponse.success) {
-            // Token might be invalid, clear it
-            setUser(null)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to initialize auth:', error)
-        setUser(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initializeAuth()
-  }, [])
-
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setLoading(true)
-      const response: AuthResponse = await authAPI.login(email, password)
-      
-      if (response.success && response.data) {
-        setUser(response.data.user)
-        return { success: true }
-      } else {
-        return { 
-          success: false, 
-          error: response.error || response.message || 'Login failed' 
-        }
-      }
-    } catch (error) {
-      console.error('Login error:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Login failed' 
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const register = async (userData: { 
-    name: string
-    email: string
-    username: string
-    password: string 
-  }): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setLoading(true)
-      const response: AuthResponse = await authAPI.register(userData)
-      
-      if (response.success && response.data) {
-        setUser(response.data.user)
-        return { success: true }
-      } else {
-        return { 
-          success: false, 
-          error: response.error || response.message || 'Registration failed' 
-        }
-      }
-    } catch (error) {
-      console.error('Registration error:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Registration failed' 
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const logout = async (): Promise<void> => {
-    try {
-      await authAPI.logout()
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      setUser(null)
-    }
-  }
-
-  const refreshUser = useCallback(async (): Promise<void> => {
-    try {
-      if (authAPI.isAuthenticated()) {
-        const response = await authAPI.getProfile()
-        if (response.success && response.data) {
-          setUser(response.data.user)
-        }
-      }
-    } catch (error) {
-      console.error('Failed to refresh user:', error)
-    }
-  }, [])
-
-  const isAuthenticated = user !== null && authAPI.isAuthenticated()
-  const isAdmin = user?.role === 'ADMIN'
-  const isModerator = user?.role === 'MODERATOR' || isAdmin
-
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      loading, 
-      login, 
-      register, 
-      logout, 
-      refreshUser,
-      isAdmin,
-      isModerator
-    }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
@@ -155,4 +28,188 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
+}
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ? {
+        id: session.user.id,
+        email: session.user.email || '',
+        name: session.user.user_metadata?.name
+      } : null)
+      setIsLoading(false)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+        setUser(session?.user ? {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name
+        } : null)
+        setIsLoading(false)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (error) {
+        console.error('Login error:', error.message)
+        return false
+      }
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          name: data.user.user_metadata?.name
+        })
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('Login error:', error)
+      return false
+    }
+  }
+
+  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name
+          }
+        }
+      })
+
+      if (error) {
+        console.error('Registration error:', error.message)
+        return false
+      }
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          name: name
+        })
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('Registration error:', error)
+      return false
+    }
+  }
+
+  const logout = async (): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Logout error:', error.message)
+      }
+      setUser(null)
+      setSession(null)
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
+
+  const sendSignupOTP = async (name: string, email: string, password: string): Promise<void> => {
+    try {
+      const response = await fetch('http://localhost:3001/auth/request-signup-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('Send signup OTP error:', error);
+      throw error;
+    }
+  };
+
+  const verifyOTP = async (email: string, otp: string): Promise<void> => {
+    try {
+      const response = await fetch('http://localhost:3001/auth/verify-signup-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, otpCode: otp })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'OTP verification failed');
+      }
+
+      // OTP verified successfully - user should be logged in automatically via Supabase
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      throw error;
+    }
+  };
+
+  const resendOTP = async (email: string): Promise<void> => {
+    try {
+      const response = await fetch('http://localhost:3001/auth/request-signup-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to resend OTP');
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      throw error;
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    session,
+    isLoading,
+    login,
+    register,
+    logout,
+    sendSignupOTP,
+    verifyOTP,
+    resendOTP
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

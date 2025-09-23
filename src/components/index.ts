@@ -7,12 +7,20 @@ export { default as Settings } from './Settings';
 export { default as AccessibilityHelper } from './AccessibilityHelper';
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as SessionManager } from './SessionManager';
+export { default as BulkDownloadModal, BulkDownloadButton } from './BulkDownloadModal';
+export { default as SyncIndicator } from './SyncIndicator';
+export { default as MultiDeviceSyncTester } from './MultiDeviceSyncTester';
 
 // Album Management Components
 export { default as AlbumCard } from './AlbumCard';
 export { default as AlbumFormModal } from './AlbumFormModal';
 export { default as AlbumDetailsModal } from './AlbumDetailsModal';
+export { default as AlbumManager } from './AlbumManager';
 export { default as PhotoAssignmentModal } from './PhotoAssignmentModal';
+
+// New Gallery System Components
+export { default as CreateAlbum } from './CreateAlbum';
+export { default as AlbumGrid } from './AlbumGrid';
 
 export { 
   LoadingSpinner, 

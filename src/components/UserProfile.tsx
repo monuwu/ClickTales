@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { usePhotos } from '../contexts/PhotoContext'
+import { usePhoto } from '../contexts/PhotoContext'
 import type { Photo } from '../types'
 
 interface UserProfile {
@@ -23,7 +23,7 @@ interface UserProfileProps {
 }
 
 const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
-  const { photos } = usePhotos()
+  const { photos } = usePhoto()
   const [profile, setProfile] = useState<UserProfile>({
     id: 'user-1',
     name: 'Photobooth User',

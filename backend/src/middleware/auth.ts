@@ -78,3 +78,5 @@ export const optionalAuth = async (req: AuthenticatedRequest, res: Response, nex
     next(error);
   }
 };
+
+export { AuthenticatedRequest };

@@ -1,33 +1,46 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette, Sparkles } from '../components/icons'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette, Sparkles, Settings, Download, Grid } from '../components/icons'
+import { usePhoto } from '../contexts/PhotoContext'
+import { useNotifications } from '../contexts/NotificationContext'
 import Timer from '../components/Timer'
 import { Filters } from '../components'
 import type { Filter } from '../components/Filters'
 import { filters, EnhancementPanel, type EnhancementValues } from '../components/Filters'
 import CameraPermissionHelper from '../components/CameraPermissionHelper'
-import { usePhotos } from '../contexts/PhotoContext'
-import { enhanceImage, enhanceCanvasInPlace } from '../utils/enhanceImage'
+import { enhanceCanvasInPlace } from '../utils/enhanceImage'
 
 const CameraPage: React.FC = () => {
   const navigate = useNavigate()
-  const { addPhoto } = usePhotos()
+  const { addPhoto } = usePhoto()
+  const { addNotification } = useNotifications()
+  
+  // Refs
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
+  
+  // Camera state
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   
-  // New state for features
+  // UI state
+  const [showPermissionHelper, setShowPermissionHelper] = useState(false)
+  const [showControls, setShowControls] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
+  
+  // Timer state
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [showTimer, setShowTimer] = useState(false)
+  const [timerDuration, setTimerDuration] = useState(3)
+  
+  // Filter and enhancement state
   const [showFilters, setShowFilters] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState<Filter>(filters[0])
-  const [timerDuration] = useState(3)
-  const [showPermissionHelper, setShowPermissionHelper] = useState(false)
   const [showEnhancePanel, setShowEnhancePanel] = useState(false)
   const [enhanceValues, setEnhanceValues] = useState<EnhancementValues>({
     brightness: 1.0,
@@ -37,7 +50,21 @@ const CameraPage: React.FC = () => {
     sharpness: 0.55,
     smoothing: 0.12,
   })
+  
+  // Photo state
+  const [capturedPhotos, setCapturedPhotos] = useState<string[]>([])
+  const [showPhotoGrid, setShowPhotoGrid] = useState(false)
+  
+  // Settings
+  const [cameraSettings, setCameraSettings] = useState({
+    resolution: 'hd', // 'sd', 'hd', 'fullhd'
+    quality: 0.9,
+    gridLines: false,
+    autoSave: true,
+    flashEnabled: false
+  })
 
+  // Initialize camera on mount and when facingMode changes
   useEffect(() => {
     startCamera()
     return () => {
@@ -45,47 +72,122 @@ const CameraPage: React.FC = () => {
         stream.getTracks().forEach(track => track.stop())
       }
     }
-  }, [facingMode])
+  }, [facingMode, cameraSettings.resolution])
 
-  // Live enhancement rendering
+  // Real-time filter rendering
   useEffect(() => {
-    let raf = 0
-    const render = () => {
+    let animationFrame = 0
+    
+    const renderFrame = () => {
       const video = videoRef.current
       const overlay = overlayCanvasRef.current
-      const ctx = overlay ? (overlay.getContext('2d', { willReadFrequently: true } as any) as CanvasRenderingContext2D | null) : null
-      if (!video || !overlay || !ctx || isLoading || !!error) {
-        raf = requestAnimationFrame(render)
+      const ctx = overlay?.getContext('2d', { willReadFrequently: true })
+      
+      if (!video || !overlay || !ctx || isLoading || error) {
+        animationFrame = requestAnimationFrame(renderFrame)
         return
       }
+
       if (video.videoWidth && video.videoHeight) {
+        // Update canvas dimensions if needed
         if (overlay.width !== video.videoWidth || overlay.height !== video.videoHeight) {
           overlay.width = video.videoWidth
           overlay.height = video.videoHeight
         }
+
+        // Clear and draw video frame
         ctx.clearRect(0, 0, overlay.width, overlay.height)
+        
+        // Apply CSS filter first
+        if (selectedFilter.cssFilter && selectedFilter.cssFilter !== 'none') {
+          ctx.filter = selectedFilter.cssFilter
+        }
+        
         ctx.drawImage(video, 0, 0, overlay.width, overlay.height)
+        ctx.filter = 'none'
+
+        // Apply enhancements if panel is open
         if (showEnhancePanel) {
           try {
-            enhanceCanvasInPlace(ctx as CanvasRenderingContext2D, overlay.width, overlay.height, enhanceValues)
-          } catch {}
+            enhanceCanvasInPlace(ctx, overlay.width, overlay.height, enhanceValues)
+          } catch (error) {
+            console.warn('Enhancement failed:', error)
+          }
+        }
+
+        // Draw grid lines if enabled
+        if (cameraSettings.gridLines) {
+          drawGridLines(ctx, overlay.width, overlay.height)
         }
       }
-      raf = requestAnimationFrame(render)
+
+      animationFrame = requestAnimationFrame(renderFrame)
     }
-    raf = requestAnimationFrame(render)
-    return () => cancelAnimationFrame(raf)
-  }, [showEnhancePanel, enhanceValues, isLoading, error])
+
+    animationFrame = requestAnimationFrame(renderFrame)
+    
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame)
+      }
+    }
+  }, [selectedFilter, showEnhancePanel, enhanceValues, cameraSettings.gridLines, isLoading, error])
+
+  // Hide controls after inactivity
+  useEffect(() => {
+    let timeout: NodeJS.Timeout
+    
+    const resetTimeout = () => {
+      clearTimeout(timeout)
+      setShowControls(true)
+      timeout = setTimeout(() => setShowControls(false), 3000)
+    }
+
+    const handleActivity = () => {
+      if (!showTimer && !showSettings) {
+        resetTimeout()
+      }
+    }
+
+    document.addEventListener('mousemove', handleActivity)
+    document.addEventListener('touchstart', handleActivity)
+    
+    // Initial timeout
+    resetTimeout()
+
+    return () => {
+      clearTimeout(timeout)
+      document.removeEventListener('mousemove', handleActivity)
+      document.removeEventListener('touchstart', handleActivity)
+    }
+  }, [showTimer, showSettings])
+
+  const getResolutionConstraints = (resolution: string) => {
+    switch (resolution) {
+      case 'sd':
+        return { width: { ideal: 640 }, height: { ideal: 480 } }
+      case 'hd':
+        return { width: { ideal: 1280 }, height: { ideal: 720 } }
+      case 'fullhd':
+        return { width: { ideal: 1920 }, height: { ideal: 1080 } }
+      default:
+        return { width: { ideal: 1280 }, height: { ideal: 720 } }
+    }
+  }
 
   const startCamera = async () => {
     setIsLoading(true)
     setError(null)
     
     try {
+      // Stop existing stream
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
+
       const constraints: MediaStreamConstraints = {
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          ...getResolutionConstraints(cameraSettings.resolution),
           facingMode: facingMode
         }
       }
@@ -96,73 +198,147 @@ const CameraPage: React.FC = () => {
         videoRef.current.srcObject = mediaStream
         setStream(mediaStream)
         setIsLoading(false)
+        
+        addNotification({
+          type: 'success',
+          title: 'Camera ready',
+          message: 'Camera initialized successfully!'
+        })
       }
     } catch (err) {
       const error = err as Error
+      let errorMessage = 'Unable to access camera. Please check your camera and try again.'
+      
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        setError('Camera access denied. Click below to enable camera permissions.')
+        errorMessage = 'Camera access denied. Please enable camera permissions.'
         setShowPermissionHelper(true)
-      } else {
-        setError('Unable to access camera. Please check your camera and try again.')
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No camera found on this device.'
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Camera is being used by another application.'
       }
+      
+      setError(errorMessage)
       setIsLoading(false)
+      
+      addNotification({
+        type: 'error',
+        title: 'Camera Error',
+        message: errorMessage
+      })
     }
   }
 
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return
+  const drawGridLines = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
+    ctx.lineWidth = 1
+    ctx.setLineDash([5, 5])
+
+    // Vertical lines
+    ctx.beginPath()
+    ctx.moveTo(width / 3, 0)
+    ctx.lineTo(width / 3, height)
+    ctx.moveTo((2 * width) / 3, 0)
+    ctx.lineTo((2 * width) / 3, height)
+    ctx.stroke()
+
+    // Horizontal lines
+    ctx.beginPath()
+    ctx.moveTo(0, height / 3)
+    ctx.lineTo(width, height / 3)
+    ctx.moveTo(0, (2 * height) / 3)
+    ctx.lineTo(width, (2 * height) / 3)
+    ctx.stroke()
+
+    ctx.setLineDash([])
+  }
+
+  const capturePhoto = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current || !overlayCanvasRef.current) return
 
     const canvas = canvasRef.current
     const video = videoRef.current
+    const overlay = overlayCanvasRef.current
     const ctx = canvas.getContext('2d')
 
     if (!ctx) return
 
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    try {
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
 
-    // Apply filter to canvas context
-    ctx.filter = selectedFilter.cssFilter || 'none'
+      // Get the processed frame from overlay canvas
+      ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height)
 
-    // Draw the video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      // Convert to data URL with quality setting
+      const imageData = canvas.toDataURL('image/jpeg', cameraSettings.quality)
+      
+      // Create photo object
+      const photo = {
+        id: `photo-${Date.now()}`,
+        url: imageData,
+        thumbnail: imageData,
+        timestamp: new Date(),
+        filename: `photo-${Date.now()}.jpg`,
+        filter: selectedFilter.id,
+        settings: {
+          filter: selectedFilter.id,
+          enhancements: showEnhancePanel ? enhanceValues : undefined,
+          resolution: cameraSettings.resolution,
+          quality: cameraSettings.quality
+        }
+      }
 
-    // Reset filter
-    ctx.filter = 'none'
+      // Add to photo context if auto-save is enabled
+      if (cameraSettings.autoSave) {
+        addPhoto(photo)
+        addNotification({
+          type: 'success',
+          title: 'Photo captured!',
+          message: 'Photo saved to your gallery successfully.',
+          action: {
+            label: 'View Gallery',
+            onClick: () => navigate('/gallery')
+          }
+        })
+      } else {
+        // Add to session photos for preview
+        setCapturedPhotos(prev => [imageData, ...prev])
+        addNotification({
+          type: 'success',
+          title: 'Photo captured!',
+          message: 'Photo ready for preview. Save or discard below.'
+        })
+      }
 
-    // Convert to data URL
-    const imageData = canvas.toDataURL('image/jpeg', 0.9)
-    
-    // Create photo object and add to gallery
-    const photo = {
-      id: Date.now().toString(),
-      url: imageData,
-      thumbnail: imageData,
-      timestamp: new Date(),
-      filename: `photo-${Date.now()}.jpg`,
-      filter: selectedFilter.id
+      // Flash effect
+      if (cameraSettings.flashEnabled) {
+        const flashDiv = document.createElement('div')
+        flashDiv.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: white;
+          z-index: 9999;
+          opacity: 0.8;
+          pointer-events: none;
+        `
+        document.body.appendChild(flashDiv)
+        setTimeout(() => document.body.removeChild(flashDiv), 100)
+      }
+
+    } catch (error) {
+      console.error('Photo capture failed:', error)
+      addNotification({
+        type: 'error',
+        title: 'Capture failed',
+        message: 'Failed to capture photo. Please try again.'
+      })
     }
-    
-    addPhoto(photo)
-    
-    // Navigate to preview with image data
-    navigate('/preview', { state: { imageData, filter: selectedFilter.id } })
-  }
-
-  const getCurrentFrameDataUrl = (): string | null => {
-    if (!videoRef.current || !canvasRef.current) return null
-    const canvas = canvasRef.current
-    const video = videoRef.current
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    ctx.filter = selectedFilter.cssFilter || 'none'
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-    ctx.filter = 'none'
-    return canvas.toDataURL('image/jpeg', 0.9)
-  }
+  }, [videoRef, canvasRef, overlayCanvasRef, selectedFilter, showEnhancePanel, enhanceValues, cameraSettings, addPhoto, addNotification, navigate])
 
   const handleCaptureClick = () => {
     if (timerEnabled) {
@@ -172,282 +348,467 @@ const CameraPage: React.FC = () => {
     }
   }
 
-  const handleTimerComplete = () => {
+  const handleTimerComplete = useCallback(() => {
     setShowTimer(false)
-    capturePhoto()
-  }
+    // Use setTimeout to defer the capture to the next tick
+    setTimeout(() => {
+      capturePhoto()
+    }, 0)
+  }, [capturePhoto])
 
-  const handleTimerCancel = () => {
+  const handleTimerCancel = useCallback(() => {
     setShowTimer(false)
-  }
-
-  const handleFilterSelect = (filter: Filter) => {
-    setSelectedFilter(filter)
-  }
+  }, [])
 
   const toggleCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
-    }
     setFacingMode(facingMode === 'user' ? 'environment' : 'user')
-  }
-
-  const handlePermissionRequest = () => {
-    setShowPermissionHelper(false)
-    setError(null)
-    startCamera()
-  }
-
-  const handleEnableCameraClick = () => {
-    if (error && error.includes('denied')) {
-      setShowPermissionHelper(true)
-    } else {
-      startCamera()
-    }
-  }
-
-  const handleEnhanceClick = async () => {
-    setShowEnhancePanel((v) => !v)
-  }
-
-  const applyEnhancement = async () => {
-    const base = getCurrentFrameDataUrl()
-    if (!base) return
-    try {
-      const enhanced = await enhanceImage(base, enhanceValues)
-      const photo = {
-        id: Date.now().toString(),
-        url: enhanced,
-        thumbnail: enhanced,
-        timestamp: new Date(),
-        filename: `enhanced-${Date.now()}.jpg`,
-        filter: selectedFilter.id,
-      }
-      addPhoto(photo)
-      navigate('/preview', { state: { imageData: enhanced, filter: selectedFilter.id } })
-    } catch (e) {
-      console.error('Enhancement failed', e)
-    }
-  }
-
-  const resetEnhancement = () => {
-    setEnhanceValues({
-      brightness: 1.0,
-      contrast: 1.12,
-      saturation: 1.08,
-      shadows: 0.0,
-      sharpness: 0.55,
-      smoothing: 0.12,
+    addNotification({
+      type: 'info',
+      title: 'Switching camera',
+      message: `Switching to ${facingMode === 'user' ? 'back' : 'front'} camera...`
     })
   }
 
-  return (
-    <div className="h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 flex flex-col overflow-hidden">
-      {/* Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-lg border-b border-purple-200/30 shadow-lg flex-shrink-0"
-      >
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-gray-700 hover:text-purple-600 transition-colors font-medium"
-        >
-          <ArrowLeft className="w-6 h-6" />
-          <span>Back</span>
-        </button>
-        
-        <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          ClickTales Camera
-        </h1>
-        
-        <button
-          onClick={toggleCamera}
-          className="p-2 text-gray-700 hover:text-purple-600 transition-colors rounded-lg hover:bg-purple-100/50"
-          title="Switch Camera"
-        >
-          <RotateCcw className="w-6 h-6" />
-        </button>
-      </motion.div>
+  const downloadPhoto = (imageData: string) => {
+    const link = document.createElement('a')
+    link.href = imageData
+    link.download = `photo-${Date.now()}.jpg`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    addNotification({
+      type: 'success',
+      title: 'Photo downloaded',
+      message: 'Photo downloaded to your device successfully.'
+    })
+  }
 
-      {/* Camera Container */}
-      <div className="flex-1 flex items-center justify-center p-6 overflow-hidden">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="relative w-full max-w-4xl aspect-video bg-white/70 backdrop-blur-lg rounded-3xl overflow-hidden shadow-2xl border border-white/20"
-        >
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm">
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-700 text-lg font-medium">Starting camera...</p>
-              </div>
-            </div>
-          )}
+  const savePhoto = (imageData: string) => {
+    const photo = {
+      id: `photo-${Date.now()}`,
+      url: imageData,
+      thumbnail: imageData,
+      timestamp: new Date(),
+      filename: `photo-${Date.now()}.jpg`,
+      filter: selectedFilter.id
+    }
+    
+    addPhoto(photo)
+    setCapturedPhotos(prev => prev.filter(p => p !== imageData))
+    
+    addNotification({
+      type: 'success',
+      title: 'Photo saved!',
+      message: 'Photo added to your gallery.'
+    })
+  }
 
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-red-50/90 backdrop-blur-sm">
-              <div className="text-center bg-white/90 backdrop-blur-sm p-8 rounded-2xl border border-red-200 shadow-xl max-w-md mx-4">
-                <Camera className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                <p className="text-gray-700 text-lg mb-6 font-medium">{error}</p>
-                <div className="space-y-3">
-                  {error.includes('denied') || error.includes('permissions') ? (
-                    <button
-                      onClick={handleEnableCameraClick}
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
-                    >
-                      Enable Camera Access
-                    </button>
-                  ) : (
-                    <button
-                      onClick={startCamera}
-                      className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg"
-                    >
-                      Try Again
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+  const discardPhoto = (imageData: string) => {
+    setCapturedPhotos(prev => prev.filter(p => p !== imageData))
+    addNotification({
+      type: 'info',
+      title: 'Photo discarded',
+      message: 'Photo removed from session.'
+    })
+  }
 
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-            style={{ filter: selectedFilter.cssFilter || 'none' }}
-          />
-
-          {/* Live enhancement overlay */}
-          <canvas ref={overlayCanvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
-
-          {/* Camera overlay effects */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Corner brackets */}
-            <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-purple-400/70"></div>
-            <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-purple-400/70"></div>
-            <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-purple-400/70"></div>
-            <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-purple-400/70"></div>
-            
-            {/* Center focus indicator */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <div className="w-12 h-12 border-2 border-purple-500/80 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Controls */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="flex items-center justify-center p-8 bg-white/80 backdrop-blur-lg border-t border-purple-200/30 shadow-lg flex-shrink-0"
-      >
-        <div className="flex items-center gap-8">
-          {/* Timer Button */}
-          <button 
-            onClick={() => setTimerEnabled(!timerEnabled)}
-            className={`p-4 rounded-2xl transition-all duration-300 shadow-lg ${
-              timerEnabled 
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/30' 
-                : 'bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-purple-100/70 border border-purple-200/30'
-            }`}
-            title={timerEnabled ? `Timer: ${timerDuration}s` : 'Enable Timer'}
-          >
-            <TimerIcon className="w-6 h-6" />
-          </button>
-
-          {/* Filters Button */}
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-4 rounded-2xl transition-all duration-300 shadow-lg ${
-              showFilters 
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-purple-500/30' 
-                : 'bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-purple-100/70 border border-purple-200/30'
-            }`}
-          >
-            <Palette className="w-6 h-6" />
-          </button>
-
-          {/* Enhance Button */}
-          <button
-            onClick={handleEnhanceClick}
-            disabled={isLoading || !!error}
-            className={`p-4 rounded-2xl transition-all duration-300 shadow-lg ${
-              'bg-white/70 backdrop-blur-sm text-gray-700 hover:bg-purple-100/70 border border-purple-200/30'
-            }`}
-            title="AI Enhance (contrast, saturation, sharpen)"
-          >
-            <Sparkles className="w-6 h-6" />
-          </button>
-
-          {/* Capture Button */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleCaptureClick}
-            disabled={isLoading || !!error}
-            className="relative w-20 h-20 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 rounded-full shadow-2xl transition-all duration-300 disabled:cursor-not-allowed group"
-          >
-            <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center group-hover:bg-gray-50 transition-colors shadow-inner">
-              <Camera className="w-8 h-8 text-gray-700" />
-            </div>
-            
-            {/* Pulse effect */}
-            <div className="absolute inset-0 rounded-full bg-purple-500 animate-ping opacity-30"></div>
-          </motion.button>
-
-          {/* Gallery Button */}
-          <button 
-            onClick={() => navigate('/gallery')}
-            className="p-4 bg-white/70 backdrop-blur-sm hover:bg-purple-100/70 rounded-2xl transition-all duration-300 shadow-lg border border-purple-200/30 text-gray-700 hover:text-purple-600"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Filters Component */}
-      <Filters 
-        selectedFilter={selectedFilter.id}
-        onFilterSelect={handleFilterSelect}
-        isVisible={showFilters}
-      />
-
-      {/* Timer Component */}
-      <Timer 
-        duration={timerDuration}
-        onComplete={handleTimerComplete}
-        isActive={showTimer}
-        onCancel={handleTimerCancel}
-      />
-
-      {/* Enhancement Panel */}
-      <EnhancementPanel
-        isVisible={showEnhancePanel}
-        values={enhanceValues}
-        onChange={setEnhanceValues}
-        onClose={() => setShowEnhancePanel(false)}
-        onApply={applyEnhancement}
-        onReset={resetEnhancement}
-      />
-
-      {/* Camera Permission Helper */}
-      <CameraPermissionHelper
-        isVisible={showPermissionHelper}
-        onRequestPermission={handlePermissionRequest}
+  if (showPermissionHelper) {
+    return (
+      <CameraPermissionHelper 
+        onRequestPermission={() => startCamera()}
+        isVisible={true}
         onClose={() => setShowPermissionHelper(false)}
       />
+    )
+  }
 
-      {/* Hidden canvas for photo capture */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+  return (
+    <div className="relative h-screen bg-black overflow-hidden">
+      {/* Video Stream */}
+      <div className="relative w-full h-full flex items-center justify-center">
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10"
+          >
+            <div className="text-center text-white">
+              <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-lg">Starting camera...</p>
+            </div>
+          </motion.div>
+        )}
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10"
+          >
+            <div className="text-center text-white max-w-md px-6">
+              <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Camera className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Camera Error</h3>
+              <p className="text-gray-300 mb-6">{error}</p>
+              <button
+                onClick={startCamera}
+                className="px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Main video element */}
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          style={{ display: isLoading || error ? 'none' : 'block' }}
+        />
+
+        {/* Overlay canvas for real-time effects */}
+        <canvas
+          ref={overlayCanvasRef}
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={{ display: isLoading || error ? 'none' : 'block' }}
+        />
+
+        {/* Hidden canvas for capture */}
+        <canvas ref={canvasRef} className="hidden" />
+        <canvas ref={previewCanvasRef} className="hidden" />
+      </div>
+
+      {/* Timer Overlay */}
+      <AnimatePresence>
+        {showTimer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/50 z-20"
+          >
+            <Timer
+              duration={timerDuration}
+              isActive={true}
+              onComplete={handleTimerComplete}
+              onCancel={handleTimerCancel}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Top Controls */}
+      <AnimatePresence>
+        {showControls && !isLoading && !error && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="absolute top-0 left-0 right-0 z-30 p-4"
+          >
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => navigate(-1)}
+                className="p-3 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowPhotoGrid(!showPhotoGrid)}
+                  className={`p-3 backdrop-blur-sm text-white rounded-full transition-colors ${
+                    capturedPhotos.length > 0
+                      ? 'bg-purple-500/80 hover:bg-purple-600/80'
+                      : 'bg-black/50 hover:bg-black/70'
+                  }`}
+                >
+                  <Grid className="w-6 h-6" />
+                  {capturedPhotos.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {capturedPhotos.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="p-3 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors"
+                >
+                  <Settings className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bottom Controls */}
+      <AnimatePresence>
+        {showControls && !isLoading && !error && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="absolute bottom-0 left-0 right-0 z-30 p-6"
+          >
+            <div className="flex items-center justify-between">
+              {/* Left Controls */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`p-4 backdrop-blur-sm text-white rounded-full transition-colors ${
+                    showFilters ? 'bg-purple-500/80' : 'bg-black/50 hover:bg-black/70'
+                  }`}
+                >
+                  <Palette className="w-6 h-6" />
+                </button>
+
+                <button
+                  onClick={() => setShowEnhancePanel(!showEnhancePanel)}
+                  className={`p-4 backdrop-blur-sm text-white rounded-full transition-colors ${
+                    showEnhancePanel ? 'bg-purple-500/80' : 'bg-black/50 hover:bg-black/70'
+                  }`}
+                >
+                  <Sparkles className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Center Capture Button */}
+              <motion.button
+                onClick={handleCaptureClick}
+                className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center">
+                  <Camera className="w-8 h-8 text-white" />
+                </div>
+                {timerEnabled && (
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <TimerIcon className="w-4 h-4 text-white" />
+                  </div>
+                )}
+              </motion.button>
+
+              {/* Right Controls */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setTimerEnabled(!timerEnabled)}
+                  className={`p-4 backdrop-blur-sm text-white rounded-full transition-colors ${
+                    timerEnabled ? 'bg-yellow-500/80' : 'bg-black/50 hover:bg-black/70'
+                  }`}
+                >
+                  <TimerIcon className="w-6 h-6" />
+                </button>
+
+                <button
+                  onClick={toggleCamera}
+                  className="p-4 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors"
+                >
+                  <RotateCcw className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Filters Panel */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="absolute bottom-32 left-0 right-0 z-40"
+          >
+            <Filters
+              onFilterSelect={setSelectedFilter}
+              selectedFilter={selectedFilter.id}
+              isVisible={true}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Enhancement Panel */}
+      <AnimatePresence>
+        {showEnhancePanel && (
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            className="absolute top-20 right-4 bottom-32 z-40"
+          >
+            <EnhancementPanel
+              values={enhanceValues}
+              onChange={setEnhanceValues}
+              isVisible={true}
+              onClose={() => setShowEnhancePanel(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Panel */}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            className="absolute top-20 left-4 right-4 z-40"
+          >
+            <div className="bg-black/80 backdrop-blur-lg rounded-2xl p-6 max-w-md mx-auto">
+              <h3 className="text-white text-lg font-semibold mb-4">Camera Settings</h3>
+              
+              <div className="space-y-4">
+                {/* Resolution */}
+                <div>
+                  <label className="block text-white text-sm font-medium mb-2">Resolution</label>
+                  <select
+                    value={cameraSettings.resolution}
+                    onChange={(e) => setCameraSettings(prev => ({ ...prev, resolution: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg"
+                  >
+                    <option value="sd">SD (640x480)</option>
+                    <option value="hd">HD (1280x720)</option>
+                    <option value="fullhd">Full HD (1920x1080)</option>
+                  </select>
+                </div>
+
+                {/* Photo Quality */}
+                <div>
+                  <label className="block text-white text-sm font-medium mb-2">
+                    Photo Quality ({Math.round(cameraSettings.quality * 100)}%)
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1"
+                    step="0.1"
+                    value={cameraSettings.quality}
+                    onChange={(e) => setCameraSettings(prev => ({ ...prev, quality: parseFloat(e.target.value) }))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Timer Duration */}
+                <div>
+                  <label className="block text-white text-sm font-medium mb-2">
+                    Timer Duration ({timerDuration}s)
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1"
+                    value={timerDuration}
+                    onChange={(e) => setTimerDuration(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Toggles */}
+                <div className="space-y-3">
+                  <label className="flex items-center justify-between text-white">
+                    <span>Grid Lines</span>
+                    <input
+                      type="checkbox"
+                      checked={cameraSettings.gridLines}
+                      onChange={(e) => setCameraSettings(prev => ({ ...prev, gridLines: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between text-white">
+                    <span>Auto Save</span>
+                    <input
+                      type="checkbox"
+                      checked={cameraSettings.autoSave}
+                      onChange={(e) => setCameraSettings(prev => ({ ...prev, autoSave: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between text-white">
+                    <span>Flash Effect</span>
+                    <input
+                      type="checkbox"
+                      checked={cameraSettings.flashEnabled}
+                      onChange={(e) => setCameraSettings(prev => ({ ...prev, flashEnabled: e.target.checked }))}
+                      className="w-5 h-5 text-purple-600 rounded"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-full mt-6 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Photo Grid Panel */}
+      <AnimatePresence>
+        {showPhotoGrid && capturedPhotos.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            className="absolute top-20 right-4 bottom-32 w-80 z-40"
+          >
+            <div className="bg-black/80 backdrop-blur-lg rounded-2xl p-4 h-full">
+              <h3 className="text-white text-lg font-semibold mb-4">Session Photos</h3>
+              
+              <div className="grid grid-cols-2 gap-2 max-h-full overflow-y-auto">
+                {capturedPhotos.map((photo, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={photo}
+                      alt={`Captured ${index}`}
+                      className="w-full aspect-square object-cover rounded-lg"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => downloadPhoto(photo)}
+                          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => savePhoto(photo)}
+                          className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+                        >
+                          <Camera className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => discardPhoto(photo)}
+                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

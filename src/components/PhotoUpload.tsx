@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { usePhotos } from '../contexts/PhotoContext'
+import { usePhoto } from '../contexts/PhotoContext'
 import type { Photo } from '../types'
 
 interface PhotoUploadProps {
@@ -9,7 +9,7 @@ interface PhotoUploadProps {
 
 const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadComplete, className = '' }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { addPhoto } = usePhotos()
+  const { addPhoto } = usePhoto()
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 

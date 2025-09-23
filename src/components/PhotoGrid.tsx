@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, Download, Trash2, Check } from './icons'
-import type { Photo } from '../types'
+import { Eye, Download, Trash2, Check, Heart } from './icons'
+import type { Photo } from '../contexts/PhotoContext'
+import { usePhoto } from '../contexts/PhotoContext'
 
 interface PhotoGridProps {
   photos: Photo[]
@@ -23,6 +24,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
   maxSelections
 }) => {
   const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null)
+  const { isFavorite, toggleFavoritePhoto } = usePhoto()
 
   const handleDownload = (photo: Photo) => {
     const link = document.createElement('a')
@@ -48,6 +50,11 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
       }
       onToggleSelection(photoId)
     }
+  }
+
+  const handleFavoriteToggle = (photoId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleFavoritePhoto(photoId)
   }
 
   const containerVariants = {
@@ -114,6 +121,22 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
               
+              {/* Heart button overlay - always visible */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => handleFavoriteToggle(photo.id, e)}
+                className="absolute top-2 left-2 z-10"
+              >
+                <Heart 
+                  className={`w-6 h-6 transition-all duration-200 drop-shadow-lg ${
+                    isFavorite(photo.id) 
+                      ? 'text-red-500 fill-red-500' 
+                      : 'text-white/80 hover:text-red-400'
+                  }`}
+                />
+              </motion.button>
+              
               {/* Selection overlay */}
               {selectionMode && (
                 <div
@@ -140,6 +163,19 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
               {!selectionMode && (
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300">
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-2">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => handleFavoriteToggle(photo.id, e)}
+                      className={`backdrop-blur-sm p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 ${
+                        isFavorite(photo.id)
+                          ? 'bg-red-500/90 text-white'
+                          : 'bg-white/90 text-gray-700 hover:bg-red-50'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${isFavorite(photo.id) ? 'fill-white' : ''}`} />
+                    </motion.button>
+                    
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}

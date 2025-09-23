@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { PhotoProvider } from './contexts/PhotoContext'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import { ErrorBoundary } from './components'
 import LandingPage from './pages/LandingPage'
 import CameraPage from './pages/CameraPage'
@@ -11,55 +12,43 @@ import PhotoboothHome from './pages/PhotoboothHome'
 import Gallery from './pages/Gallery'
 import CollagePage from './pages/CollagePage'
 import Admin from './pages/Admin'
-import ComponentDemo from './pages/ComponentDemo'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import SessionsPage from './pages/SessionsPage'
-import AlbumsPage from './pages/AlbumsPage'
+import Albums from './pages/Albums'
+import { OTPVerificationPage } from './pages/OTPVerificationPage'
+import ForgotPassword from './pages/ForgotPassword'
 import './App.css'
 import './theme.css'
 
-// Loading component
-const LoadingScreen: React.FC = () => (
-  <div className="min-h-screen bg-white flex items-center justify-center">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-      <p className="text-gray-600">Loading ClickTales...</p>
-    </div>
-  </div>
-)
-
 // App routes component that uses auth context
 const AppRoutes: React.FC = () => {
-  const { loading } = useAuth()
-
-  if (loading) {
-    return <LoadingScreen />
-  }
-
   return (
-    <PhotoProvider>
-      <Router>
-        <div className="app">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/photobooth" element={<PhotoboothHome />} />
-            <Route path="/camera" element={<CameraPage />} />
-            <Route path="/preview" element={<PreviewPage />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/collage" element={<CollagePage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/profile-setup" element={<ProfileSetup />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/sessions" element={<SessionsPage />} />
-            <Route path="/albums" element={<AlbumsPage />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/demo" element={<ComponentDemo />} />
-          </Routes>
-        </div>
-      </Router>
-    </PhotoProvider>
+    <NotificationProvider>
+      <PhotoProvider>
+        <Router>
+          <div className="app">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/photobooth" element={<PhotoboothHome />} />
+              <Route path="/camera" element={<CameraPage />} />
+              <Route path="/preview" element={<PreviewPage />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/collage" element={<CollagePage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/otp-verification" element={<OTPVerificationPage />} />
+              <Route path="/profile-setup" element={<ProfileSetup />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/sessions" element={<SessionsPage />} />
+              <Route path="/albums" element={<Albums />} />
+              <Route path="/admin" element={<Admin />} />
+            </Routes>
+          </div>
+        </Router>
+      </PhotoProvider>
+    </NotificationProvider>
   )
 }
 

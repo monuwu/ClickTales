@@ -82,9 +82,9 @@ export class OtpService {
     const otpRecord = await prisma.otpVerification.findFirst({
       where: {
         userId,
-        code,
+        otpCode: code,
         type,
-        isUsed: false
+        used: false
       }
     });
 
@@ -96,7 +96,7 @@ export class OtpService {
       // Mark as used to prevent reuse
       await prisma.otpVerification.update({
         where: { id: otpRecord.id },
-        data: { isUsed: true }
+        data: { used: true }
       });
       return { valid: false, error: 'OTP code has expired' };
     }
@@ -104,7 +104,7 @@ export class OtpService {
     // Mark OTP as used
     await prisma.otpVerification.update({
       where: { id: otpRecord.id },
-      data: { isUsed: true }
+      data: { used: true }
     });
 
     return { valid: true };
