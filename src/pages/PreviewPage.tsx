@@ -2,6 +2,8 @@ import React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, RotateCcw, Share, Save } from '../components/icons'
+import { usePhoto } from '../contexts/PhotoContext'
+import { useNotifications } from '../contexts/NotificationContext'
 
 interface LocationState {
   imageData: string
@@ -11,6 +13,8 @@ const PreviewPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as LocationState
+  const { addPhoto } = usePhoto()
+  const { addNotification } = useNotifications()
 
   // If no image data, redirect to camera
   React.useEffect(() => {
@@ -19,20 +23,39 @@ const PreviewPage: React.FC = () => {
     }
   }, [state, navigate])
 
-  const handleSave = () => {
-    console.log('Photo Saved!')
+  const handleSave = async () => {
+    if (!state?.imageData) return
     
-    // In a real app, you would save to local storage or send to server
-    // For now, we'll create a download link
-    if (state?.imageData) {
-      const link = document.createElement('a')
-      link.download = `clicktales-photo-${Date.now()}.jpg`
-      link.href = state.imageData
-      link.click()
+    try {
+      // Save photo to Supabase using PhotoContext
+      await addPhoto({
+        url: state.imageData,
+        filename: `clicktales-photo-${Date.now()}.jpg`,
+        metadata: {
+          // Add any available metadata
+        }
+      })
+      
+      // Show success notification
+      addNotification({
+        type: 'success',
+        title: 'Photo Saved',
+        message: 'Photo saved to gallery successfully!',
+        duration: 3000
+      })
+      
+      // Navigate to gallery to show the saved photo
+      navigate('/gallery')
+      
+    } catch (error) {
+      console.error('Failed to save photo:', error)
+      addNotification({
+        type: 'error',
+        title: 'Save Failed',
+        message: 'Failed to save photo. Please try again.',
+        duration: 3000
+      })
     }
-    
-    // Show success message
-    alert('Photo saved successfully!')
   }
 
   const handleShare = async () => {

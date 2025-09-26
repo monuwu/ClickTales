@@ -46,7 +46,7 @@ const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     if (!('share' in navigator)) {
       // Fallback: copy link to clipboard
       const albumUrl = `${window.location.origin}/albums/${album.id}`
-      await navigator.clipboard.writeText(albumUrl)
+      await (navigator as Navigator).clipboard.writeText(albumUrl)
       return
     }
 

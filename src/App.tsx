@@ -14,7 +14,6 @@ import CollagePage from './pages/CollagePage'
 import Admin from './pages/Admin'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
-import SessionsPage from './pages/SessionsPage'
 import Albums from './pages/Albums'
 import { OTPVerificationPage } from './pages/OTPVerificationPage'
 import ForgotPassword from './pages/ForgotPassword'
@@ -41,7 +40,6 @@ const AppRoutes: React.FC = () => {
               <Route path="/profile-setup" element={<ProfileSetup />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/sessions" element={<SessionsPage />} />
               <Route path="/albums" element={<Albums />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>

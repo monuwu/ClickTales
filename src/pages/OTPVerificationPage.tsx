@@ -6,6 +6,7 @@ import OTPInput from '../components/OTPInput';
 
 interface LocationState {
   email?: string;
+  flow?: 'signup' | 'login';
 }
 
 export function OTPVerificationPage() {
@@ -17,10 +18,11 @@ export function OTPVerificationPage() {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyOTP, resendOTP } = useAuth();
+  const { verifyOTP, resendOTP, verifyLoginOTP, sendLoginOTP } = useAuth();
   
   const state = location.state as LocationState;
   const email = state?.email;
+  const flow = state?.flow || 'signup'; // Default to signup for backward compatibility
 
   // Redirect if no email provided
   useEffect(() => {
@@ -59,7 +61,11 @@ export function OTPVerificationPage() {
     setError('');
 
     try {
-      await verifyOTP(email!, otpCode);
+      if (flow === 'login') {
+        await verifyLoginOTP(email!, otpCode);
+      } else {
+        await verifyOTP(email!, otpCode);
+      }
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Invalid verification code. Please try again.');
@@ -75,7 +81,11 @@ export function OTPVerificationPage() {
     setError('');
 
     try {
-      await resendOTP(email!);
+      if (flow === 'login') {
+        await sendLoginOTP(email!);
+      } else {
+        await resendOTP(email!);
+      }
       setResendCooldown(60); // 60 second cooldown
       setOtp(''); // Clear current OTP
     } catch (err: any) {
@@ -113,7 +123,7 @@ export function OTPVerificationPage() {
             </svg>
           </motion.div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Verify Your Email
+            {flow === 'login' ? 'Verify Login Code' : 'Verify Your Email'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             We've sent a 6-digit verification code to

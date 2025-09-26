@@ -18,6 +18,8 @@ interface AuthContextType {
   sendSignupOTP: (name: string, email: string, password: string) => Promise<void>
   verifyOTP: (email: string, otp: string) => Promise<void>
   resendOTP: (email: string) => Promise<void>
+  sendLoginOTP: (email: string) => Promise<void>
+  verifyLoginOTP: (email: string, otp: string) => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -139,65 +141,111 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendSignupOTP = async (name: string, email: string, password: string): Promise<void> => {
     try {
-      const response = await fetch('http://localhost:3001/auth/request-signup-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password })
-      });
+      // For signup, we'll register the user directly with email confirmation
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send OTP');
+      if (error) {
+        console.error('Signup error:', error.message)
+        throw new Error(error.message || 'Failed to sign up')
       }
     } catch (error) {
-      console.error('Send signup OTP error:', error);
-      throw error;
+      console.error('Send signup OTP error:', error)
+      throw error
     }
-  };
+  }
 
   const verifyOTP = async (email: string, otp: string): Promise<void> => {
     try {
-      const response = await fetch('http://localhost:3001/auth/verify-signup-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, otpCode: otp })
-      });
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email'
+      })
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'OTP verification failed');
+      if (error) {
+        console.error('OTP verification error:', error.message)
+        throw new Error(error.message || 'OTP verification failed')
       }
-
-      // OTP verified successfully - user should be logged in automatically via Supabase
     } catch (error) {
-      console.error('OTP verification error:', error);
-      throw error;
+      console.error('OTP verification error:', error)
+      throw error
     }
-  };
+  }
 
   const resendOTP = async (email: string): Promise<void> => {
     try {
-      const response = await fetch('http://localhost:3001/auth/request-signup-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email })
-      });
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email
+      })
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to resend OTP');
+      if (error) {
+        console.error('Resend OTP error:', error.message)
+        throw new Error(error.message || 'Failed to resend OTP')
       }
     } catch (error) {
-      console.error('Resend OTP error:', error);
-      throw error;
+      console.error('Resend OTP error:', error)
+      throw error
     }
-  };
+  }
+
+  const sendLoginOTP = async (email: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+
+      if (error) {
+        console.error('Send login OTP error:', error.message)
+        throw new Error(error.message || 'Failed to send login OTP')
+      }
+    } catch (error) {
+      console.error('Send login OTP error:', error)
+      throw error
+    }
+  }
+
+  const verifyLoginOTP = async (email: string, otp: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email'
+      })
+
+      if (error) {
+        console.error('Login OTP verification error:', error.message)
+        throw new Error(error.message || 'Login OTP verification failed')
+      }
+
+      if (data.user && data.session) {
+        setSession(data.session)
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          name: data.user.user_metadata?.name
+        })
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('Login OTP verification error:', error)
+      throw error
+    }
+  }
 
   const value: AuthContextType = {
     user,
@@ -208,7 +256,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     sendSignupOTP,
     verifyOTP,
-    resendOTP
+    resendOTP,
+    sendLoginOTP,
+    verifyLoginOTP
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -25,7 +25,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login, sendSignupOTP } = useAuth()
+  const { login, sendSignupOTP, sendLoginOTP } = useAuth()
   const navigate = useNavigate()
 
   //  Handles text input changes
@@ -45,7 +45,7 @@ const Login: React.FC = () => {
 
     try {
       if (isLogin) {
-        // Login: email & password only
+        // Regular login: email & password
         const success = await login(formData.email, formData.password)
         if (success) navigate('/')
         else setError('Invalid email or password')
@@ -64,12 +64,34 @@ const Login: React.FC = () => {
         
         // Navigate to OTP verification page with email
         navigate('/otp-verification', {
-          state: { email: formData.email }
+          state: { email: formData.email, flow: 'signup' }
         })
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Authentication error:', err)
-      setError('Authentication failed. Please try again.')
+      setError(err.message || 'Authentication failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle OTP login
+  const handleOTPLogin = async () => {
+    if (!formData.email) {
+      setError('Please enter your email address')
+      return
+    }
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      await sendLoginOTP(formData.email)
+      navigate('/otp-verification', {
+        state: { email: formData.email, flow: 'login' }
+      })
+    } catch (err: any) {
+      setError(err.message || 'Failed to send OTP. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -296,7 +318,63 @@ const Login: React.FC = () => {
                   )}
                 </span>
               </motion.button>
+
+              {/* OTP Login Button (Only for Login) */}
+              {isLogin && (
+                <div className="text-center">
+                  <span className="text-sm text-gray-500">or</span>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    onClick={handleOTPLogin}
+                    disabled={isLoading}
+                    className="mt-2 w-full flex justify-center py-3 px-4 border-2 border-purple-200 text-lg font-medium rounded-xl text-purple-600 bg-transparent hover:bg-purple-50 hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="flex items-center">
+                      {isLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-2"></div>
+                          Sending OTP...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="mr-2 h-5 w-5" />
+                          Login with OTP Email
+                        </>
+                      )}
+                    </span>
+                  </motion.button>
+                </div>
+              )}
             </form>
+
+            {/* OTP Login Button (Only for Login) */}
+            {isLogin && (
+              <div className="mt-4">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleOTPLogin}
+                  disabled={isLoading}
+                  className="w-full flex justify-center py-3 px-4 border-2 border-purple-300 text-lg font-medium rounded-xl text-purple-600 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="flex items-center">
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-2"></div>
+                        Sending OTP...
+                      </>
+                    ) : (
+                      <>
+                        Login with Email OTP
+                        <Mail className="ml-2 h-5 w-5" />
+                      </>
+                    )}
+                  </span>
+                </motion.button>
+              </div>
+            )}
 
             {/* Toggle between Login/Signup */}
             <div className="mt-6 text-center">

@@ -214,6 +214,7 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const { data, error } = await supabase
         .from('photos')
         .insert({
+          user_id: user.id,
           filename: photoData.filename,
           url: uploadPath,
           thumbnail_url: photoData.thumbnail || uploadPath,

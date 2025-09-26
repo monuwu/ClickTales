@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react'
 import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import type { Album, Photo } from '../contexts/PhotoContext'
@@ -33,7 +32,7 @@ export const usePDFDownload = () => {
       const img = new Image()
       img.crossOrigin = 'anonymous'
       img.onload = () => resolve(img)
-      img.onerror = (error) => reject(new Error(`Failed to load image: ${src}`))
+      img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
       img.src = src
     })
   }, [])
@@ -142,7 +141,6 @@ export const usePDFDownload = () => {
 
     const {
       layout = 'single',
-      quality = 0.8,
       includeMetadata = true,
       pageSize = 'a4'
     } = options

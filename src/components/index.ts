@@ -6,7 +6,6 @@ export { default as UserProfile } from './UserProfile';
 export { default as Settings } from './Settings';
 export { default as AccessibilityHelper } from './AccessibilityHelper';
 export { default as ErrorBoundary } from './ErrorBoundary';
-export { default as SessionManager } from './SessionManager';
 export { default as BulkDownloadModal, BulkDownloadButton } from './BulkDownloadModal';
 export { default as SyncIndicator } from './SyncIndicator';
 export { default as MultiDeviceSyncTester } from './MultiDeviceSyncTester';
