@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { PhotoProvider } from './contexts/PhotoContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { ErrorBoundary } from './components'
+import FloatingDock from './components/FloatingDock'
 import LandingPage from './pages/LandingPage'
 import CameraPage from './pages/CameraPage'
 import PreviewPage from './pages/PreviewPage'
@@ -28,21 +30,25 @@ const AppRoutes: React.FC = () => {
         <Router>
           <div className="app">
             <Routes>
+              {/* All routes now public - accessible without authentication */}
               <Route path="/" element={<LandingPage />} />
-              <Route path="/photobooth" element={<PhotoboothHome />} />
-              <Route path="/camera" element={<CameraPage />} />
-              <Route path="/preview" element={<PreviewPage />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/collage" element={<CollagePage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/otp-verification" element={<OTPVerificationPage />} />
               <Route path="/profile-setup" element={<ProfileSetup />} />
+              <Route path="/photobooth" element={<PhotoboothHome />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/camera" element={<CameraPage />} />
+              <Route path="/preview" element={<PreviewPage />} />
+              <Route path="/collage" element={<CollagePage />} />
+              <Route path="/albums" element={<Albums />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/albums" element={<Albums />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>
+            
+            {/* Floating Dock Navigation - appears on all pages except landing */}
+            <FloatingDock />
           </div>
         </Router>
       </PhotoProvider>
@@ -53,9 +59,11 @@ const AppRoutes: React.FC = () => {
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }

@@ -183,7 +183,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                         e.stopPropagation()
                         setPreviewPhoto(photo)
                       }}
-                      className="bg-white/90 backdrop-blur-sm text-gray-700 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
+                      className="bg-white/90 backdrop-blur-sm text-gray-700 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
                     >
                       <Eye className="w-4 h-4" />
                     </motion.button>
@@ -195,7 +195,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                         e.stopPropagation()
                         handleDownload(photo)
                       }}
-                      className="bg-white/90 backdrop-blur-sm text-gray-700 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
+                      className="bg-white/90 backdrop-blur-sm text-gray-700 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
                     >
                       <Download className="w-4 h-4" />
                     </motion.button>

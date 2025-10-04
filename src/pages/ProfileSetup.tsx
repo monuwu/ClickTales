@@ -119,7 +119,7 @@ const ProfileSetup: React.FC = () => {
             className="space-y-6"
           >
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-poppins font-bold text-gray-900 mb-2">
+              <h3 className="text-2xl font-dm font-bold text-gray-900 mb-2">
                 Upload Your Profile Picture
               </h3>
               <p className="text-gray-600">
@@ -187,7 +187,7 @@ const ProfileSetup: React.FC = () => {
             className="space-y-6"
           >
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-poppins font-bold text-gray-900 mb-2">
+              <h3 className="text-2xl font-dm font-bold text-gray-900 mb-2">
                 Tell Us About Yourself
               </h3>
               <p className="text-gray-600">
@@ -281,7 +281,7 @@ const ProfileSetup: React.FC = () => {
             className="space-y-6"
           >
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-poppins font-bold text-gray-900 mb-2">
+              <h3 className="text-2xl font-dm font-bold text-gray-900 mb-2">
                 Notification Preferences
               </h3>
               <p className="text-gray-600">

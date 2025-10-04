@@ -6,9 +6,13 @@ export { default as UserProfile } from './UserProfile';
 export { default as Settings } from './Settings';
 export { default as AccessibilityHelper } from './AccessibilityHelper';
 export { default as ErrorBoundary } from './ErrorBoundary';
+export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as BulkDownloadModal, BulkDownloadButton } from './BulkDownloadModal';
 export { default as SyncIndicator } from './SyncIndicator';
 export { default as MultiDeviceSyncTester } from './MultiDeviceSyncTester';
+export { default as StarAnimationButton } from './StarAnimationButton';
+export { default as StarOverlay } from './StarOverlay';
+export { default as FeatureStatus } from './FeatureStatus';
 
 // Album Management Components
 export { default as AlbumCard } from './AlbumCard';

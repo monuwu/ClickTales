@@ -5,8 +5,7 @@ import { usePDFDownload } from '../hooks/usePDFDownload'
 import { 
   GalleryHeader, 
   PhotoGrid, 
-  CollageSection,
-  MultiDeviceSyncTester
+  CollageSection
 } from '../components'
 import { 
   Heart, 
@@ -388,9 +387,6 @@ const Gallery: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
-
-      {/* Multi-Device Sync Tester */}
-      <MultiDeviceSyncTester />
     </div>
   )
 }

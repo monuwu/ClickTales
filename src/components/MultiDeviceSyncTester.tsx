@@ -53,6 +53,8 @@ const MultiDeviceSyncTester: React.FC = () => {
     const deviceInfo = getDeviceInfo()
     
     try {
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { error } = await supabase
         .from('sync_test_devices')
         .upsert({
@@ -74,13 +76,15 @@ const MultiDeviceSyncTester: React.FC = () => {
   // Load devices
   const loadDevices = async () => {
     try {
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data, error } = await supabase
         .from('sync_test_devices')
         .select('*')
         .order('last_seen', { ascending: false })
       
       if (!error && data) {
-        setDevices(data.map(d => ({
+        setDevices(data.map((d: any) => ({
           id: d.id,
           name: d.name,
           userAgent: d.user_agent,
@@ -105,6 +109,8 @@ const MultiDeviceSyncTester: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     try {
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data: remotePhotos, error } = await supabase
         .from('photos')
         .select('id')
@@ -136,6 +142,8 @@ const MultiDeviceSyncTester: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     try {
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data: remoteAlbums, error } = await supabase
         .from('albums')
         .select('id')
@@ -168,6 +176,8 @@ const MultiDeviceSyncTester: React.FC = () => {
     
     try {
       // Test if we can subscribe to changes
+      if (!supabase) return
+      
       const subscription = supabase
         .channel('sync-test')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => {

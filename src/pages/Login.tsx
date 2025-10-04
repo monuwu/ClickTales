@@ -1,21 +1,21 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Camera,
   Mail,
   Lock,
   Eye,
   EyeOff,
   User,
-  ArrowRight
+  ArrowRight,
+  Home
 } from '../components/icons'
-import Navigation from '../components/Navigation'
 import { useAuth } from '../contexts/AuthContext'
 
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,386 +25,363 @@ const Login: React.FC = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login, sendSignupOTP, sendLoginOTP } = useAuth()
+  const { login, sendSignupOTP, user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Get the path to redirect to after successful login
+  const from = (location.state as any)?.from?.pathname || '/photobooth'
 
-  //  Handles text input changes
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate(from, { replace: true })
+    }
+  }, [user, navigate, from])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
+    if (error) setError('')
   }
 
-  //  Handles form submit for both login & signup
+  const validateForm = () => {
+    if (isLogin) {
+      if (!formData.email.trim() || !formData.password.trim()) {
+        setError('Please fill in all fields')
+        return false
+      }
+    } else {
+      if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim() || !formData.confirmPassword.trim()) {
+        setError('Please fill in all fields')
+        return false
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match')
+        return false
+      }
+
+      if (formData.password.length < 8) {
+        setError('Password must be at least 8 characters long')
+        return false
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(formData.email.trim())) {
+        setError('Please enter a valid email address')
+        return false
+      }
+    }
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    
+    if (!validateForm()) return
+    
     setIsLoading(true)
 
     try {
       if (isLogin) {
-        // Regular login: email & password
-        const success = await login(formData.email, formData.password)
-        if (success) navigate('/')
-        else setError('Invalid email or password')
-      } else {
-        // Sign up with OTP verification
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match')
-          return
+        const success = await login(formData.email.trim(), formData.password)
+        if (success) {
+          navigate(from, { replace: true })
+        } else {
+          setError('Invalid email or password')
         }
-
-        await sendSignupOTP(
-          formData.name,
-          formData.email,
-          formData.password
-        )
-        
-        // Navigate to OTP verification page with email
+      } else {
+        await sendSignupOTP(formData.name.trim(), formData.email.trim(), formData.password)
         navigate('/otp-verification', {
-          state: { email: formData.email, flow: 'signup' }
+          state: { 
+            email: formData.email.trim(), 
+            flow: 'signup',
+            message: 'Account created! Please verify your email address'
+          }
         })
       }
-    } catch (err: any) {
-      console.error('Authentication error:', err)
-      setError(err.message || 'Authentication failed. Please try again.')
+    } catch (error: any) {
+      setError(error.message || 'An error occurred')
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Handle OTP login
-  const handleOTPLogin = async () => {
-    if (!formData.email) {
-      setError('Please enter your email address')
-      return
-    }
-
-    setIsLoading(true)
-    setError('')
-
-    try {
-      await sendLoginOTP(formData.email)
-      navigate('/otp-verification', {
-        state: { email: formData.email, flow: 'login' }
-      })
-    } catch (err: any) {
-      setError(err.message || 'Failed to send OTP. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  //  Switch between Login & Sign Up
   const toggleMode = () => {
-    setIsLogin((prev) => !prev)
+    setIsLogin(!isLogin)
+    setError('')
     setFormData({
       name: '',
       email: '',
       password: '',
       confirmPassword: ''
     })
-    setError('')
   }
 
   return (
-    <div className="min-h-screen bg-white font-inter">
-      <Navigation />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+        {/* Animated Orbs */}
+        <motion.div
+          className="absolute top-20 left-20 w-72 h-72 bg-purple-500/30 rounded-full blur-3xl"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -50, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl"
+          animate={{
+            x: [0, -80, 0],
+            y: [0, 60, 0],
+            scale: [1, 0.8, 1],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 5 }}
+        />
+        <motion.div
+          className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/20 rounded-full blur-2xl"
+          animate={{
+            x: [-50, 50, -50],
+            y: [-30, 30, -30],
+            scale: [0.8, 1.3, 0.8],
+          }}
+          transition={{ duration: 30, repeat: Infinity, ease: "easeInOut", delay: 10 }}
+        />
+      </div>
 
-      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
-        <div className="max-w-md w-full">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8"
-          >
-            <div className="flex items-center justify-center mb-6">
-              <motion.div
-                whileHover={{ rotate: 15, scale: 1.1 }}
-                className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-2xl shadow-lg"
+      {/* Floating Particles */}
+      {[...Array(6)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 bg-white/20 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.8, 0.2],
+            scale: [1, 1.5, 1],
+          }}
+          transition={{
+            duration: 3 + Math.random() * 2,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+
+      {/* Back to Home */}
+      <Link
+        to="/"
+        className="absolute top-6 left-6 z-50 p-3 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition-all duration-300"
+      >
+        <Home className="w-6 h-6 text-white" />
+      </Link>
+
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md mx-auto"
+        >
+          {/* Glassmorphism Container */}
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-6 sm:p-8">
+            {/* Toggle Tabs */}
+            <div className="flex bg-white/10 rounded-2xl p-1 mb-8">
+              <button
+                onClick={() => setIsLogin(true)}
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
+                  isLogin
+                    ? 'bg-white text-purple-600 shadow-lg'
+                    : 'text-white/80 hover:text-white'
+                }`}
               >
-                <Camera className="h-8 w-8 text-white" />
-              </motion.div>
+                Sign In
+              </button>
+              <button
+                onClick={() => setIsLogin(false)}
+                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
+                  !isLogin
+                    ? 'bg-white text-purple-600 shadow-lg'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                Register
+              </button>
             </div>
 
-            <h2 className="text-3xl font-poppins font-bold text-gray-900 mb-2">
-              {isLogin ? 'Welcome Back!' : 'Join ClickTales'}
-            </h2>
-            <p className="text-gray-600">
-              {isLogin
-                ? 'Sign in to continue your photobooth journey'
-                : 'Create your account and start capturing moments'}
-            </p>
-          </motion.div>
+            {/* Form Header */}
+            <motion.div
+              key={isLogin ? 'signin' : 'register'}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-center mb-8"
+            >
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                {isLogin ? 'Welcome Back' : 'Create Account'}
+              </h1>
+              <p className="text-white/70 text-sm sm:text-base">
+                {isLogin 
+                  ? 'Sign in to access your photo booth'
+                  : 'Join ClickTales to start creating amazing photos'
+                }
+              </p>
+            </motion.div>
 
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-8"
-          >
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-                {error}
-              </div>
-            )}
+            {/* Error Message */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 text-red-100 text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Full Name (Only Sign Up) */}
-              {!isLogin && (
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Email */}
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isLogin ? 'signin-form' : 'register-form'}
+                  initial={{ opacity: 0, x: isLogin ? -20 : 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: isLogin ? 20 : -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
                 >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm Password (Only Sign Up) */}
-              {!isLogin && (
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400" />
+                  {/* Name Field (Register Only) */}
+                  {!isLogin && (
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                      <input
+                        type="text"
+                        name="name"
+                        placeholder="Full Name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        required={!isLogin}
+                      />
                     </div>
+                  )}
+
+                  {/* Email Field */}
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
                     <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      required
-                      value={formData.confirmPassword}
+                      type="email"
+                      name="email"
+                      placeholder="Email Address"
+                      value={formData.email}
                       onChange={handleInputChange}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                      placeholder="Confirm your password"
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                      required
                     />
                   </div>
-                </div>
-              )}
 
-              {/* Remember Me & Forgot Password */}
-              {isLogin && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
+                  {/* Password Field */}
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
                     <input
-                      id="remember-me"
-                      name="remember-me"
-                      type="checkbox"
-                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      placeholder="Password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                      required
                     />
-                    <label
-                      htmlFor="remember-me"
-                      className="ml-2 block text-sm text-gray-700"
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
                     >
-                      Remember me
-                    </label>
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
-                  <Link
-                    to="/forgot-password"
-                    className="text-sm text-purple-600 hover:text-purple-500 font-medium"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-              )}
+
+                  {/* Confirm Password Field (Register Only) */}
+                  {!isLogin && (
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        placeholder="Confirm Password"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        required={!isLogin}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
 
               {/* Submit Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-xl text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="flex items-center">
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      {isLogin ? 'Signing In...' : 'Creating Account...'}
-                    </>
-                  ) : (
-                    <>
-                      {isLogin ? 'Sign In' : 'Create Account'}
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                    </>
-                  )}
-                </span>
+                {isLoading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </motion.button>
-
-              {/* OTP Login Button (Only for Login) */}
-              {isLogin && (
-                <div className="text-center">
-                  <span className="text-sm text-gray-500">or</span>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="button"
-                    onClick={handleOTPLogin}
-                    disabled={isLoading}
-                    className="mt-2 w-full flex justify-center py-3 px-4 border-2 border-purple-200 text-lg font-medium rounded-xl text-purple-600 bg-transparent hover:bg-purple-50 hover:border-purple-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="flex items-center">
-                      {isLoading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-2"></div>
-                          Sending OTP...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="mr-2 h-5 w-5" />
-                          Login with OTP Email
-                        </>
-                      )}
-                    </span>
-                  </motion.button>
-                </div>
-              )}
             </form>
 
-            {/* OTP Login Button (Only for Login) */}
-            {isLogin && (
-              <div className="mt-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleOTPLogin}
-                  disabled={isLoading}
-                  className="w-full flex justify-center py-3 px-4 border-2 border-purple-300 text-lg font-medium rounded-xl text-purple-600 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            {/* Additional Links */}
+            <div className="mt-6 text-center space-y-4">
+              {isLogin && (
+                <Link
+                  to="/forgot-password"
+                  className="text-white/70 hover:text-white transition-colors text-sm"
                 >
-                  <span className="flex items-center">
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-2"></div>
-                        Sending OTP...
-                      </>
-                    ) : (
-                      <>
-                        Login with Email OTP
-                        <Mail className="ml-2 h-5 w-5" />
-                      </>
-                    )}
-                  </span>
-                </motion.button>
+                  Forgot your password?
+                </Link>
+              )}
+              
+              <div className="text-white/50 text-sm">
+                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  className="text-purple-300 hover:text-purple-200 font-semibold transition-colors"
+                >
+                  {isLogin ? 'Register here' : 'Sign in here'}
+                </button>
               </div>
-            )}
-
-            {/* Toggle between Login/Signup */}
-            <div className="mt-6 text-center">
-              <button
-                onClick={toggleMode}
-                type="button"
-                className="text-purple-600 hover:text-purple-500 font-medium transition-colors"
-              >
-                {isLogin
-                  ? "Don't have an account? Sign up"
-                  : 'Already have an account? Sign in'}
-              </button>
             </div>
-          </motion.div>
-
-          {/* Back to Home */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center mt-6"
-          >
-            <Link
-              to="/"
-              className="text-gray-600 hover:text-purple-600 transition-colors font-medium"
-            >
-               Back to Home
-            </Link>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   )

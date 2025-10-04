@@ -7,12 +7,14 @@ import OTPInput from '../components/OTPInput';
 interface LocationState {
   email?: string;
   flow?: 'signup' | 'login';
+  message?: string;
 }
 
 export function OTPVerificationPage() {
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isResending, setIsResending] = useState(false);
   
@@ -22,7 +24,18 @@ export function OTPVerificationPage() {
   
   const state = location.state as LocationState;
   const email = state?.email;
-  const flow = state?.flow || 'signup'; // Default to signup for backward compatibility
+  const flow = state?.flow || 'signup';
+  const initialMessage = state?.message;
+
+  // Set initial success message if provided
+  useEffect(() => {
+    if (initialMessage) {
+      setSuccess(initialMessage);
+      // Clear success message after 3 seconds
+      const timer = setTimeout(() => setSuccess(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [initialMessage]);
 
   // Redirect if no email provided
   useEffect(() => {
@@ -44,6 +57,7 @@ export function OTPVerificationPage() {
   const handleOTPChange = (value: string) => {
     setOtp(value);
     setError('');
+    setSuccess('');
     
     // Auto-submit when OTP is complete
     if (value.length === 6) {
@@ -52,22 +66,31 @@ export function OTPVerificationPage() {
   };
 
   const handleVerifyOTP = async (otpCode: string = otp) => {
-    if (otpCode.length !== 6) {
+    if (!otpCode || otpCode.length !== 6) {
       setError('Please enter a 6-digit verification code');
       return;
     }
 
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       if (flow === 'login') {
-        await verifyLoginOTP(email!, otpCode);
+        const success = await verifyLoginOTP(email!, otpCode);
+        if (success) {
+          setSuccess('Login successful! Redirecting...');
+          setTimeout(() => navigate('/'), 1000);
+        } else {
+          setError('Invalid verification code. Please try again.');
+        }
       } else {
         await verifyOTP(email!, otpCode);
+        setSuccess('Account verified successfully! Redirecting...');
+        setTimeout(() => navigate('/'), 1000);
       }
-      navigate('/');
     } catch (err: any) {
+      console.error('OTP verification error:', err);
       setError(err.message || 'Invalid verification code. Please try again.');
     } finally {
       setIsLoading(false);
@@ -79,6 +102,7 @@ export function OTPVerificationPage() {
 
     setIsResending(true);
     setError('');
+    setSuccess('');
 
     try {
       if (flow === 'login') {
@@ -86,9 +110,14 @@ export function OTPVerificationPage() {
       } else {
         await resendOTP(email!);
       }
+      setSuccess('Verification code sent successfully!');
       setResendCooldown(60); // 60 second cooldown
       setOtp(''); // Clear current OTP
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
+      console.error('Resend OTP error:', err);
       setError(err.message || 'Failed to resend verification code');
     } finally {
       setIsResending(false);
@@ -128,18 +157,23 @@ export function OTPVerificationPage() {
           <p className="text-gray-600 dark:text-gray-400">
             We've sent a 6-digit verification code to
           </p>
-          <p className="font-semibold text-blue-600 dark:text-blue-400 mt-1">
+          <p className="font-semibold text-blue-600 dark:text-blue-400 mt-1 break-all">
             {email}
           </p>
         </div>
 
-        {/* OTP Input */}
-        <div className="mb-6">
-          <OTPInput
-            onChange={handleOTPChange}
-            disabled={isLoading}
-          />
-        </div>
+        {/* Success Message */}
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+          >
+            <p className="text-sm text-green-600 dark:text-green-400 text-center">
+              {success}
+            </p>
+          </motion.div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -154,18 +188,31 @@ export function OTPVerificationPage() {
           </motion.div>
         )}
 
+        {/* OTP Input */}
+        <div className="mb-6">
+          <OTPInput
+            onChange={handleOTPChange}
+            disabled={isLoading}
+            error={!!error}
+            loading={isLoading}
+          />
+        </div>
+
         {/* Actions */}
         <div className="space-y-4">
           {/* Verify Button */}
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: isLoading || otp.length !== 6 ? 1 : 1.02 }}
+            whileTap={{ scale: isLoading || otp.length !== 6 ? 1 : 0.98 }}
             onClick={() => handleVerifyOTP()}
             disabled={isLoading || otp.length !== 6}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
           >
             {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Verifying...
+              </>
             ) : (
               'Verify Code'
             )}
@@ -198,6 +245,15 @@ export function OTPVerificationPage() {
               className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm transition-colors duration-200"
             >
               ← Back to Login
+            </button>
+          </div>
+          {/* Go Back */}
+          <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={handleGoBack}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm transition-colors duration-200"
+            >
+              Back to Login
             </button>
           </div>
         </div>

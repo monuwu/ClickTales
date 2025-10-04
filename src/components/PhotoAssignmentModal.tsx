@@ -35,9 +35,12 @@ const PhotoAssignmentModal: React.FC<PhotoAssignmentModalProps> = ({
         
         <div className="text-center py-8">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Photo assignment functionality coming soon!
+            Photo assignment feature is under development.
           </p>
           <p className="text-sm text-gray-500">Album: {album.title}</p>
+          <p className="text-xs text-gray-400 mt-2">
+            This feature will be available in a future update.
+          </p>
         </div>
         
         <div className="flex justify-end gap-3">

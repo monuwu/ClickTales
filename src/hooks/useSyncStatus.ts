@@ -81,6 +81,8 @@ export const useSyncStatus = () => {
         switch (operation.type) {
           case 'upload':
             // Handle photo upload
+            if (!supabase) throw new Error('Supabase not available')
+            
             const { error: uploadError } = await supabase.storage
               .from('photos')
               .upload(operation.data.path, operation.data.file, {
@@ -89,6 +91,8 @@ export const useSyncStatus = () => {
             
             if (!uploadError) {
               // Add to photos table
+              if (!supabase) throw new Error('Supabase not available')
+              
               const { error: dbError } = await supabase
                 .from('photos')
                 .insert(operation.data.metadata)
@@ -99,6 +103,8 @@ export const useSyncStatus = () => {
 
           case 'delete':
             // Handle photo deletion
+            if (!supabase) throw new Error('Supabase not available')
+            
             const { error: deleteError } = await supabase
               .from('photos')
               .delete()
@@ -109,6 +115,8 @@ export const useSyncStatus = () => {
 
           case 'update':
             // Handle photo update
+            if (!supabase) throw new Error('Supabase not available')
+            
             const { error: updateError } = await supabase
               .from('photos')
               .update(operation.data.updates)

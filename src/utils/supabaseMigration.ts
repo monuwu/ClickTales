@@ -29,6 +29,8 @@ export class SupabaseMigration {
             continue
           }
 
+          if (!supabase) throw new Error('Supabase not available')
+          
           const { error } = await supabase
             .from('photos')
             .insert({
@@ -67,6 +69,8 @@ export class SupabaseMigration {
       let migratedCount = 0
 
       // Get photo IDs that actually exist in Supabase
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data: existingPhotos } = await supabase
         .from('photos')
         .select('id')
@@ -74,12 +78,14 @@ export class SupabaseMigration {
 
       if (!existingPhotos) return 0
 
-      const existingPhotoIds = existingPhotos.map(p => p.id)
+      const existingPhotoIds = existingPhotos.map((p: any) => p.id)
 
       for (const photoId of favoriteIds) {
         if (!existingPhotoIds.includes(photoId)) continue
 
         try {
+          if (!supabase) throw new Error('Supabase not available')
+          
           const { error } = await supabase
             .from('favorites')
             .insert({ photo_id: photoId })
@@ -113,6 +119,8 @@ export class SupabaseMigration {
       for (const album of albums) {
         try {
           // Create album
+          if (!supabase) throw new Error('Supabase not available')
+          
           const { data: albumData, error: albumError } = await supabase
             .from('albums')
             .insert({
@@ -133,13 +141,15 @@ export class SupabaseMigration {
           // Add photos to album if they exist
           if (album.photoIds.length > 0) {
             // Check which photos exist in Supabase
+            if (!supabase) throw new Error('Supabase not available')
+            
             const { data: existingPhotos } = await supabase
               .from('photos')
               .select('id')
               .in('id', album.photoIds)
 
             if (existingPhotos && existingPhotos.length > 0) {
-              const existingPhotoIds = existingPhotos.map(p => p.id)
+              const existingPhotoIds = existingPhotos.map((p: any) => p.id)
               const albumPhotos = album.photoIds
                 .filter(photoId => existingPhotoIds.includes(photoId))
                 .map((photoId, index) => ({
@@ -148,6 +158,8 @@ export class SupabaseMigration {
                   position: index
                 }))
 
+              if (!supabase) throw new Error('Supabase not available')
+              
               const { error: photosError } = await supabase
                 .from('album_photos')
                 .insert(albumPhotos)

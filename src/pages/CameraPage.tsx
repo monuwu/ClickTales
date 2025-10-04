@@ -560,7 +560,7 @@ const CameraPage: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               {/* Left Controls */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`p-4 backdrop-blur-sm text-white rounded-full transition-colors ${

@@ -79,12 +79,33 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { addNotification } = useNotifications()
   const { user } = useAuth()
 
-  // Load data from Supabase when user is authenticated
+  // Load data from Supabase when user is authenticated, or guest data when not
   const loadData = useCallback(async () => {
     if (!user) {
-      setPhotos([])
-      setAlbums([])
-      setFavoritePhotos([])
+      // Load guest data from localStorage
+      setPhotos([]) // Guest photos are session-only (in memory) to avoid quota issues
+      
+      // Load guest albums metadata
+      try {
+        const guestAlbums = JSON.parse(localStorage.getItem('guestAlbums') || '[]')
+        const formattedAlbums: Album[] = guestAlbums.map((album: any) => ({
+          ...album,
+          createdAt: new Date(album.createdAt),
+          updatedAt: new Date(album.updatedAt)
+        }))
+        setAlbums(formattedAlbums)
+      } catch {
+        setAlbums([])
+      }
+      
+      // Load guest favorites
+      try {
+        const guestFavorites = JSON.parse(localStorage.getItem('guestFavorites') || '[]')
+        setFavoritePhotos(guestFavorites)
+      } catch {
+        setFavoritePhotos([])
+      }
+      
       return
     }
 
@@ -93,6 +114,11 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setError(null)
 
       // Load photos
+      if (!supabase) {
+        console.warn('Supabase not available, skipping photo fetch')
+        return
+      }
+      
       const { data: photosData, error: photosError } = await supabase
         .from('photos')
         .select('*')
@@ -100,7 +126,7 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (photosError) throw photosError
 
-      const formattedPhotos: Photo[] = photosData.map(photo => ({
+      const formattedPhotos: Photo[] = photosData.map((photo: any) => ({
         id: photo.id,
         url: photo.url,
         thumbnail: photo.thumbnail_url,
@@ -113,6 +139,11 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setPhotos(formattedPhotos)
 
       // Load albums with photo relationships
+      if (!supabase) {
+        console.warn('Supabase not available, skipping albums fetch')
+        return
+      }
+      
       const { data: albumsData, error: albumsError } = await supabase
         .from('albums')
         .select(`
@@ -126,7 +157,7 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (albumsError) throw albumsError
 
-      const formattedAlbums: Album[] = albumsData.map(album => ({
+      const formattedAlbums: Album[] = albumsData.map((album: any) => ({
         id: album.id,
         title: album.title,
         description: album.description,
@@ -141,13 +172,18 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setAlbums(formattedAlbums)
 
       // Load favorites
+      if (!supabase) {
+        console.warn('Supabase not available, skipping favorites fetch')
+        return
+      }
+      
       const { data: favoritesData, error: favoritesError } = await supabase
         .from('favorites')
         .select('photo_id')
 
       if (favoritesError) throw favoritesError
 
-      setFavoritePhotos(favoritesData.map(fav => fav.photo_id))
+      setFavoritePhotos(favoritesData.map((fav: any) => fav.photo_id))
 
     } catch (error) {
       console.error('Error loading data:', error)
@@ -174,7 +210,43 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Upload photo to Supabase Storage and save metadata
   const addPhoto = useCallback(async (photoData: Omit<Photo, 'id' | 'timestamp'>): Promise<string> => {
-    if (!user) throw new Error('User not authenticated')
+    // Allow guest users to take photos (stored locally until login)
+    if (!user) {
+      console.warn('Guest mode: Photo will be stored locally until login')
+      
+      // For guest users, create a temporary photo with local storage
+      const photoId = `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const guestPhoto: Photo = {
+        ...photoData,
+        id: photoId,
+        timestamp: new Date()
+      }
+      
+      // Store in memory only for guest users to avoid localStorage quota issues
+      setPhotos(prev => [guestPhoto, ...prev])
+      
+      // Don't store large image data in localStorage to avoid quota exceeded errors
+      // Instead, just store metadata for session persistence
+      try {
+        const existingGuestMeta = JSON.parse(localStorage.getItem('guestPhotosMeta') || '[]')
+        const photoMeta = {
+          id: photoId,
+          filename: photoData.filename,
+          timestamp: new Date(),
+          isCollage: photoData.isCollage || false
+        }
+        localStorage.setItem('guestPhotosMeta', JSON.stringify([photoMeta, ...existingGuestMeta]))
+      } catch (storageError) {
+        console.warn('Could not save photo metadata to localStorage:', storageError)
+      }
+      
+      addNotification({
+        type: 'info',
+        title: 'Photo Captured',
+        message: 'Login to save permanently'
+      })
+      return photoId
+    }
 
     try {
       let uploadPath: string
@@ -190,6 +262,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const fileName = `${user.id}/${Date.now()}-${photoData.filename || 'photo'}.${fileExtension}`
         
         // Upload to Supabase Storage
+        if (!supabase) throw new Error('Supabase not available')
+        
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('photos')
           .upload(fileName, blob, {
@@ -200,6 +274,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (uploadError) throw uploadError
         
         // Get public URL
+        if (!supabase) throw new Error('Supabase not available')
+        
         const { data: { publicUrl } } = supabase.storage
           .from('photos')
           .getPublicUrl(uploadData.path)
@@ -211,6 +287,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       // Save photo metadata to database
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data, error } = await supabase
         .from('photos')
         .insert({
@@ -258,13 +336,47 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [user, addNotification])
 
   const deletePhoto = useCallback(async (photoId: string): Promise<void> => {
-    if (!user) throw new Error('User not authenticated')
+    // Allow guest users to delete photos from local storage
+    if (!user) {
+      console.warn('Guest mode: Deleting photo from local storage')
+      
+      // Remove from photos array
+      setPhotos(prev => prev.filter(p => p.id !== photoId))
+      
+      // Remove from local storage metadata (not full images to avoid quota issues)
+      try {
+        const existingGuestMeta = JSON.parse(localStorage.getItem('guestPhotosMeta') || '[]')
+        const updatedMeta = existingGuestMeta.filter((meta: any) => meta.id !== photoId)
+        localStorage.setItem('guestPhotosMeta', JSON.stringify(updatedMeta))
+      } catch (storageError) {
+        console.warn('Could not update localStorage metadata:', storageError)
+      }
+      
+      // Remove from favorites if it was favorited
+      setFavoritePhotos(prev => prev.filter(id => id !== photoId))
+      try {
+        const existingGuestFavorites = JSON.parse(localStorage.getItem('guestFavorites') || '[]')
+        const updatedFavorites = existingGuestFavorites.filter((id: string) => id !== photoId)
+        localStorage.setItem('guestFavorites', JSON.stringify(updatedFavorites))
+      } catch (storageError) {
+        console.warn('Could not update favorites in localStorage:', storageError)
+      }
+      
+      addNotification({
+        type: 'success',
+        title: 'Photo Deleted',
+        message: 'Photo removed from session'
+      })
+      return
+    }
 
     try {
       // Find the photo to get its storage path
       const photo = photos.find(p => p.id === photoId)
       
       // Delete from database (cascades to album_photos and favorites)
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { error: deleteError } = await supabase
         .from('photos')
         .delete()
@@ -274,6 +386,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Try to delete from storage if it's a Supabase-hosted file
       if (photo?.url.includes('supabase')) {
+        if (!supabase) throw new Error('Supabase not available')
+        
         const urlParts = photo.url.split('/')
         const fileName = urlParts.slice(-2).join('/')
         const { error: storageError } = await supabase.storage
@@ -315,6 +429,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       // Delete all photos for the current user
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { error: photosError } = await supabase
         .from('photos')
         .delete()
@@ -323,13 +439,17 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (photosError) throw photosError
 
       // Clear storage folder for user
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data: files, error: listError } = await supabase.storage
         .from('photos')
         .list(user.id)
 
       if (!listError && files) {
-        const filePaths = files.map(file => `${user.id}/${file.name}`)
+        const filePaths = files.map((file: any) => `${user.id}/${file.name}`)
         if (filePaths.length > 0) {
+          if (!supabase) throw new Error('Supabase not available')
+          
           await supabase.storage
             .from('photos')
             .remove(filePaths)
@@ -360,13 +480,48 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Favorites management
   const toggleFavoritePhoto = useCallback(async (photoId: string): Promise<void> => {
-    if (!user) throw new Error('User not authenticated')
+    // Allow guest users to toggle favorites locally
+    if (!user) {
+      console.warn('Guest mode: Favorites will be stored locally until login')
+      
+      const isFavorited = favoritePhotos.includes(photoId)
+      
+      if (isFavorited) {
+        // Remove from local favorites
+        setFavoritePhotos(prev => prev.filter(id => id !== photoId))
+      } else {
+        // Add to local favorites
+        setFavoritePhotos(prev => [...prev, photoId])
+      }
+      
+      // Store in localStorage for guest users
+      try {
+        const existingGuestFavorites = JSON.parse(localStorage.getItem('guestFavorites') || '[]')
+        if (isFavorited) {
+          const updatedFavorites = existingGuestFavorites.filter((id: string) => id !== photoId)
+          localStorage.setItem('guestFavorites', JSON.stringify(updatedFavorites))
+        } else {
+          localStorage.setItem('guestFavorites', JSON.stringify([...existingGuestFavorites, photoId]))
+        }
+      } catch (storageError) {
+        console.warn('Could not update favorites in localStorage:', storageError)
+      }
+      
+      addNotification({
+        type: 'info',
+        title: 'Favorite Updated',
+        message: 'Login to sync favorites permanently'
+      })
+      return
+    }
 
     try {
       const isFavorited = favoritePhotos.includes(photoId)
 
       if (isFavorited) {
         // Remove from favorites
+        if (!supabase) throw new Error('Supabase not available')
+        
         const { error } = await supabase
           .from('favorites')
           .delete()
@@ -377,6 +532,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setFavoritePhotos(prev => prev.filter(id => id !== photoId))
       } else {
         // Add to favorites
+        if (!supabase) throw new Error('Supabase not available')
+        
         const { error } = await supabase
           .from('favorites')
           .insert({ photo_id: photoId })
@@ -407,10 +564,53 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Album operations
   const createAlbum = useCallback(async (title: string, description?: string, photoIds: string[] = []): Promise<string> => {
-    if (!user) throw new Error('User not authenticated')
+    // Allow guest users to create albums locally
+    if (!user) {
+      console.warn('Guest mode: Album will be stored locally until login')
+      
+      const albumId = `guest-album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const guestAlbum: Album = {
+        id: albumId,
+        title,
+        description: description || '',
+        coverPhoto: photoIds.length > 0 ? photos.find(p => p.id === photoIds[0])?.url : undefined,
+        photoIds: photoIds,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      
+      // Add to albums state
+      setAlbums(prev => [guestAlbum, ...prev])
+      
+      // Store metadata in localStorage (lightweight)
+      try {
+        const existingGuestAlbums = JSON.parse(localStorage.getItem('guestAlbums') || '[]')
+        const albumMeta = {
+          id: albumId,
+          title,
+          description: description || '',
+          photoIds: photoIds,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        localStorage.setItem('guestAlbums', JSON.stringify([albumMeta, ...existingGuestAlbums]))
+      } catch (storageError) {
+        console.warn('Could not save album metadata to localStorage:', storageError)
+      }
+      
+      addNotification({
+        type: 'success',
+        title: 'Album Created',
+        message: 'Login to save permanently'
+      })
+      
+      return albumId
+    }
 
     try {
       // Create album
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data: albumData, error: albumError } = await supabase
         .from('albums')
         .insert({
@@ -425,6 +625,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Add photos to album if provided
       if (photoIds.length > 0) {
+        if (!supabase) throw new Error('Supabase not available')
+        
         const albumPhotos = photoIds.map((photoId, index) => ({
           album_id: albumData.id,
           photo_id: photoId,
@@ -470,10 +672,34 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [user, photos, addNotification])
 
   const deleteAlbum = useCallback(async (albumId: string): Promise<void> => {
-    if (!user) throw new Error('User not authenticated')
+    // Allow guest users to delete albums from local storage
+    if (!user) {
+      console.warn('Guest mode: Deleting album from local storage')
+      
+      // Remove from albums state
+      setAlbums(prev => prev.filter(album => album.id !== albumId))
+      
+      // Remove from localStorage metadata
+      try {
+        const existingGuestAlbums = JSON.parse(localStorage.getItem('guestAlbums') || '[]')
+        const updatedAlbums = existingGuestAlbums.filter((album: any) => album.id !== albumId)
+        localStorage.setItem('guestAlbums', JSON.stringify(updatedAlbums))
+      } catch (storageError) {
+        console.warn('Could not update albums in localStorage:', storageError)
+      }
+      
+      addNotification({
+        type: 'success',
+        title: 'Album Deleted',
+        message: 'Album removed from session'
+      })
+      return
+    }
 
     try {
       // Delete album (cascades to album_photos)
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { error } = await supabase
         .from('albums')
         .delete()
@@ -509,6 +735,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (updates.description !== undefined) updateData.description = updates.description
       if (updates.coverPhoto !== undefined) updateData.cover_photo_url = updates.coverPhoto
 
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { error } = await supabase
         .from('albums')
         .update(updateData)
@@ -544,6 +772,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       // Get current max position
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { data: positions, error: positionError } = await supabase
         .from('album_photos')
         .select('position')
@@ -556,6 +786,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const nextPosition = (positions[0]?.position ?? -1) + 1
 
       // Add photo to album
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { error } = await supabase
         .from('album_photos')
         .insert({
@@ -594,6 +826,8 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       // Remove photo from album
+      if (!supabase) throw new Error('Supabase not available')
+      
       const { error } = await supabase
         .from('album_photos')
         .delete()

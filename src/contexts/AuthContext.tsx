@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
+import { mockAuth, isSupabaseAvailable } from '../services/mockAuth'
 import type { Session } from '@supabase/supabase-js'
 
 interface User {
@@ -38,20 +39,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ? {
-        id: session.user.id,
-        email: session.user.email || '',
-        name: session.user.user_metadata?.name
-      } : null)
-      setIsLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+    let cleanup: (() => void) | undefined
+    
+    // Check if Supabase is available
+    isSupabaseAvailable().then(available => {
+      console.log(available ? '✅ Using Supabase auth' : '🔄 Using mock auth (Supabase unavailable)')
+      
+      const authService = (available && supabase) ? supabase.auth : mockAuth
+      
+      // Get initial session
+      authService.getSession().then(({ data: { session } }: { data: { session: any } }) => {
         setSession(session)
         setUser(session?.user ? {
           id: session.user.id,
@@ -59,15 +56,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: session.user.user_metadata?.name
         } : null)
         setIsLoading(false)
-      }
-    )
+      }).catch((error: any) => {
+        console.error('Failed to get session:', error)
+        setIsLoading(false)
+      })
 
-    return () => subscription.unsubscribe()
+      // Listen for auth changes
+      const subscription = authService.onAuthStateChange((event: any, session: any) => {
+        console.log('Auth state changed:', event, session?.user?.email)
+        setSession(session)
+        setUser(session?.user ? {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name
+        } : null)
+        setIsLoading(false)
+      })
+
+      // Handle different subscription types
+      if ('unsubscribe' in subscription) {
+        cleanup = subscription.unsubscribe
+      } else if ('data' in subscription && subscription.data?.subscription) {
+        cleanup = () => subscription.data.subscription.unsubscribe()
+      }
+    }).catch(error => {
+      console.error('Failed to initialize auth:', error)
+      setIsLoading(false)
+    })
+
+    return () => {
+      if (cleanup) cleanup()
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Determine which auth service to use
+      const available = await isSupabaseAvailable()
+      const authService = (available && supabase) ? supabase.auth : mockAuth
+      
+      console.log(`🔄 Attempting login with ${available ? 'Supabase' : 'Mock'} auth`)
+      
+      const { data, error } = await authService.signInWithPassword({
         email,
         password
       })
@@ -95,115 +125,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name
+      const available = await isSupabaseAvailable()
+      
+      if (available && supabase) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name
+            }
           }
-        }
-      })
-
-      if (error) {
-        console.error('Registration error:', error.message)
-        return false
-      }
-
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          name: name
         })
+
+        if (error) {
+          console.error('Registration error:', error.message)
+          return false
+        }
+
+        if (data.user) {
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            name: name
+          })
+          return true
+        }
+
+        return false
+      } else {
+        // Use mock auth for registration
+        console.log('🔄 Using mock auth for registration')
+        const { error } = await mockAuth.signUp({
+          email: email.toLowerCase().trim(),
+          password: password,
+          options: {
+            data: { name: name }
+          }
+        })
+        
+        if (error) {
+          console.error('Mock registration error:', error.message)
+          return false
+        }
+        
+        console.log('✅ Mock Auth: Registration successful for', email)
         return true
       }
-
-      return false
     } catch (error) {
       console.error('Registration error:', error)
       return false
     }
   }
 
-  const logout = async (): Promise<void> => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error('Logout error:', error.message)
-      }
-      setUser(null)
-      setSession(null)
-    } catch (error) {
-      console.error('Logout error:', error)
-    }
-  }
-
-  const sendSignupOTP = async (name: string, email: string, password: string): Promise<void> => {
-    try {
-      // For signup, we'll register the user directly with email confirmation
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
-      })
-
-      if (error) {
-        console.error('Signup error:', error.message)
-        throw new Error(error.message || 'Failed to sign up')
-      }
-    } catch (error) {
-      console.error('Send signup OTP error:', error)
-      throw error
-    }
-  }
-
-  const verifyOTP = async (email: string, otp: string): Promise<void> => {
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email'
-      })
-
-      if (error) {
-        console.error('OTP verification error:', error.message)
-        throw new Error(error.message || 'OTP verification failed')
-      }
-    } catch (error) {
-      console.error('OTP verification error:', error)
-      throw error
-    }
-  }
-
-  const resendOTP = async (email: string): Promise<void> => {
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email
-      })
-
-      if (error) {
-        console.error('Resend OTP error:', error.message)
-        throw new Error(error.message || 'Failed to resend OTP')
-      }
-    } catch (error) {
-      console.error('Resend OTP error:', error)
-      throw error
-    }
-  }
-
   const sendLoginOTP = async (email: string): Promise<void> => {
     try {
+      if (!supabase) {
+        throw new Error('Supabase not available')
+      }
+      
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: email.toLowerCase().trim(),
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          shouldCreateUser: false
         }
       })
 
@@ -219,31 +203,159 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyLoginOTP = async (email: string, otp: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email'
-      })
-
-      if (error) {
-        console.error('Login OTP verification error:', error.message)
-        throw new Error(error.message || 'Login OTP verification failed')
-      }
-
-      if (data.user && data.session) {
-        setSession(data.session)
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.name
+      const available = await isSupabaseAvailable()
+      
+      if (available && supabase) {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: email.toLowerCase().trim(),
+          token: otp.trim(),
+          type: 'email'
         })
+
+        if (error) {
+          console.error('Login OTP verification error:', error.message)
+          throw new Error(error.message || 'Invalid verification code')
+        }
+
+        if (data.user && data.session) {
+          setSession(data.session)
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            name: data.user.user_metadata?.name || data.user.user_metadata?.full_name
+          })
+          return true
+        }
+
+        return false
+      } else {
+        // Mock auth doesn't use OTP for login
+        console.log('✅ Mock Auth: Login OTP verification skipped')
         return true
       }
-
-      return false
     } catch (error) {
       console.error('Login OTP verification error:', error)
       throw error
+    }
+  }
+
+  const sendSignupOTP = async (name: string, email: string, password: string): Promise<void> => {
+    try {
+      // Determine which auth service to use
+      const available = await isSupabaseAvailable()
+      
+      if (available && supabase) {
+        const { error } = await supabase.auth.signUp({
+          email: email.toLowerCase().trim(),
+          password: password,
+          options: {
+            data: {
+              full_name: name,
+              name: name
+            }
+          }
+        })
+
+        if (error) {
+          console.error('Signup error:', error.message)
+          throw new Error(error.message || 'Failed to create account')
+        }
+      } else {
+        // Use mock auth for signup
+        console.log('🔄 Using mock auth for signup')
+        const { error } = await mockAuth.signUp({
+          email: email.toLowerCase().trim(),
+          password: password,
+          options: {
+            data: { name: name }
+          }
+        })
+        
+        if (error) {
+          console.error('Mock signup error:', error.message)
+          throw new Error(error.message || 'Failed to create account')
+        }
+        
+        console.log('✅ Mock Auth: Signup successful for', email)
+      }
+    } catch (error) {
+      console.error('Send signup OTP error:', error)
+      throw error
+    }
+  }
+
+  const verifyOTP = async (email: string, otp: string): Promise<void> => {
+    try {
+      const available = await isSupabaseAvailable()
+      
+      if (available && supabase) {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: email.toLowerCase().trim(),
+          token: otp.trim(),
+          type: 'signup'
+        })
+
+        if (error) {
+          console.error('OTP verification error:', error.message)
+          throw new Error(error.message || 'Invalid verification code')
+        }
+
+        if (data.user && data.session) {
+          setSession(data.session)
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            name: data.user.user_metadata?.name || data.user.user_metadata?.full_name
+          })
+        }
+      } else {
+        // Mock auth doesn't use OTP, so just verify the user exists
+        console.log('✅ Mock Auth: OTP verification skipped')
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error)
+      throw error
+    }
+  }
+
+  const resendOTP = async (email: string): Promise<void> => {
+    try {
+      const available = await isSupabaseAvailable()
+      
+      if (available && supabase) {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email.toLowerCase().trim()
+        })
+
+        if (error) {
+          console.error('Resend OTP error:', error.message)
+          throw new Error(error.message || 'Failed to resend verification code')
+        }
+      } else {
+        // Mock auth doesn't use OTP
+        console.log('✅ Mock Auth: Resend OTP skipped')
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error)
+      throw error
+    }
+  }
+
+  const logout = async (): Promise<void> => {
+    try {
+      // Determine which auth service to use
+      const available = await isSupabaseAvailable()
+      const authService = (available && supabase) ? supabase.auth : mockAuth
+      
+      const { error } = await authService.signOut()
+      if (error) {
+        console.error('Logout error:', error.message)
+      }
+      setUser(null)
+      setSession(null)
+    } catch (error) {
+      console.error('Logout error:', error)
     }
   }
 
