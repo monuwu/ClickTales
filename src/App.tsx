@@ -17,7 +17,6 @@ import Admin from './pages/Admin'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Albums from './pages/Albums'
-import { OTPVerificationPage } from './pages/OTPVerificationPage'
 import ForgotPassword from './pages/ForgotPassword'
 import './App.css'
 import './theme.css'
@@ -34,7 +33,6 @@ const AppRoutes: React.FC = () => {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/otp-verification" element={<OTPVerificationPage />} />
               <Route path="/profile-setup" element={<ProfileSetup />} />
               <Route path="/photobooth" element={<PhotoboothHome />} />
               <Route path="/gallery" element={<Gallery />} />

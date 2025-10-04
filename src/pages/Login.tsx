@@ -84,26 +84,43 @@ const Login: React.FC = () => {
     if (!validateForm()) return
     
     setIsLoading(true)
+    
+    console.log('🔄 Login attempt:', { 
+      email: formData.email.trim(), 
+      password: formData.password ? '***' : '(empty)',
+      isLogin 
+    })
 
     try {
       if (isLogin) {
         const success = await login(formData.email.trim(), formData.password)
+        console.log('Login result:', success)
         if (success) {
+          console.log('✅ Login successful, navigating to:', from)
           navigate(from, { replace: true })
         } else {
+          console.log('❌ Login failed')
           setError('Invalid email or password')
         }
       } else {
+        // Simplified registration - direct signup without OTP
+        console.log('🔄 Starting simplified registration')
         await sendSignupOTP(formData.name.trim(), formData.email.trim(), formData.password)
-        navigate('/otp-verification', {
-          state: { 
-            email: formData.email.trim(), 
-            flow: 'signup',
-            message: 'Account created! Please verify your email address'
-          }
-        })
+        
+        // Auto-login after successful registration
+        const loginSuccess = await login(formData.email.trim(), formData.password)
+        if (loginSuccess) {
+          console.log('✅ Registration and auto-login successful')
+          navigate('/photobooth', { replace: true })
+        } else {
+          console.log('✅ Registration successful, please login')
+          setIsLogin(true)
+          setError('')
+          setFormData({ ...formData, password: '', confirmPassword: '' })
+        }
       }
     } catch (error: any) {
+      console.error('Login error:', error)
       setError(error.message || 'An error occurred')
     } finally {
       setIsLoading(false)

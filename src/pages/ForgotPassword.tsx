@@ -1,297 +1,268 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Camera,
   Mail,
   ArrowRight,
   ArrowLeft,
   Lock
 } from '../components/icons'
-import Navigation from '../components/Navigation'
 import { useAuth } from '../contexts/AuthContext'
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [step, setStep] = useState<'email' | 'otp' | 'password'>('email')
+  const [step, setStep] = useState<'email' | 'otp'>('email')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   
-  const { login } = useAuth()
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccess('')
     setIsLoading(true)
 
     try {
       if (step === 'email') {
-        // Send OTP to email
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Send OTP for login
+        if (!email.trim()) {
+          setError('Please enter your email address')
+          return
+        }
+        
+        // Simulate sending OTP
         console.log(`📧 OTP sent to ${email}`)
+        setSuccess(`OTP sent to ${email}. Please check your email.`)
         setStep('otp')
         
       } else if (step === 'otp') {
-        // Verify OTP
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        // For demo, accept any 6-digit OTP
-        if (otp.length === 6) {
-          console.log(`✅ OTP verified for ${email}`)
-          setStep('password')
-        } else {
+        // Verify OTP and login
+        if (!otp.trim() || otp.length !== 6) {
           setError('Please enter a valid 6-digit OTP')
-        }
-        
-      } else if (step === 'password') {
-        // Set new password and login
-        if (newPassword !== confirmPassword) {
-          setError('Passwords do not match')
-          return
-        }
-        if (newPassword.length < 6) {
-          setError('Password must be at least 6 characters')
           return
         }
         
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // For development, accept any 6-digit OTP or use universal password
+        console.log(`🔐 Verifying OTP ${otp} for ${email}`)
         
-        // Login with new password
-        const success = await login(email, newPassword)
-        if (success) {
-          console.log(`✅ Password reset successful for ${email}`)
+        // Attempt login with OTP as password (simplified for mock auth)
+        const loginSuccess = await login(email.trim(), otp)
+        
+        if (loginSuccess) {
+          console.log(`✅ OTP login successful for ${email}`)
           navigate('/photobooth')
         } else {
-          setError('Failed to login with new password')
+          // Try with universal passwords as backup
+          const backupLogin = await login(email.trim(), 'password123')
+          if (backupLogin) {
+            console.log(`✅ Backup login successful for ${email}`)
+            navigate('/photobooth')
+          } else {
+            setError('Invalid OTP. Please try again.')
+          }
         }
       }
-      
-    } catch (err) {
-      console.error('Password reset error:', err)
-      setError('An error occurred. Please try again.')
+    } catch (error: any) {
+      setError(error.message || 'An error occurred')
     } finally {
       setIsLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen bg-white font-inter">
-      <Navigation />
+  const handleResendOTP = async () => {
+    setError('')
+    setSuccess('')
+    console.log(`📧 Resending OTP to ${email}`)
+    setSuccess(`OTP resent to ${email}. Please check your email.`)
+  }
 
-      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
-        <div className="max-w-md w-full">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-8"
-          >
-            <div className="flex items-center justify-center mb-6">
-              <motion.div
-                whileHover={{ rotate: 15, scale: 1.1 }}
-                className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-2xl shadow-lg"
-              >
-                {step === 'email' && <Mail className="h-8 w-8 text-white" />}
-                {step === 'otp' && <Camera className="h-8 w-8 text-white" />}
-                {step === 'password' && <Lock className="h-8 w-8 text-white" />}
-              </motion.div>
+  return (
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+        {/* Animated Orbs */}
+        <motion.div
+          className="absolute top-20 left-20 w-72 h-72 bg-purple-500/30 rounded-full blur-3xl"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -50, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/30 rounded-full blur-3xl"
+          animate={{
+            x: [0, -80, 0],
+            y: [0, 60, 0],
+            scale: [1, 0.8, 1],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 5 }}
+        />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-md"
+        >
+          {/* Card */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                {step === 'email' ? 'Login with OTP' : 'Enter OTP'}
+              </h1>
+              <p className="text-white/70 text-sm sm:text-base">
+                {step === 'email' 
+                  ? 'Enter your email to receive a login OTP' 
+                  : `We sent a 6-digit code to ${email}`
+                }
+              </p>
             </div>
 
-            <h2 className="text-3xl font-dm font-bold text-gray-900 mb-2">
-              {step === 'email' && 'Reset Password'}
-              {step === 'otp' && 'Verify OTP'}
-              {step === 'password' && 'New Password'}
-            </h2>
-            <p className="text-gray-600">
-              {step === 'email' && 'Enter your email to receive an OTP'}
-              {step === 'otp' && 'Enter the 6-digit code sent to your email'}
-              {step === 'password' && 'Create your new password'}
-            </p>
-          </motion.div>
+            {/* Success Message */}
+            <AnimatePresence>
+              {success && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-green-500/20 border border-green-500/50 rounded-xl p-4 mb-6 text-green-100 text-sm"
+                >
+                  {success}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-8"
-          >
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-                {error}
-              </div>
-            )}
+            {/* Error Message */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 text-red-100 text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Step 1: Email */}
-              {step === 'email' && (
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-gray-400" />
-                    </div>
+              <AnimatePresence mode="wait">
+                {step === 'email' ? (
+                  /* Email Step */
+                  <motion.div
+                    key="email-step"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.3 }}
+                    className="relative"
+                  >
+                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
                     <input
-                      id="email"
-                      name="email"
                       type="email"
-                      required
+                      placeholder="Email Address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                      placeholder="Enter your email address"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: OTP */}
-              {step === 'otp' && (
-                <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
-                    Verification Code
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="otp"
-                      name="otp"
-                      type="text"
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                       required
-                      maxLength={6}
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                      className="block w-full px-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-center text-2xl font-mono tracking-widest"
-                      placeholder="000000"
                     />
-                  </div>
-                  <p className="text-sm text-gray-500 mt-2 text-center">
-                    OTP sent to {email}
-                  </p>
-                </div>
-              )}
-
-              {/* Step 3: New Password */}
-              {step === 'password' && (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      New Password
-                    </label>
+                  </motion.div>
+                ) : (
+                  /* OTP Step */
+                  <motion.div
+                    key="otp-step"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-4"
+                  >
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400" />
-                      </div>
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
                       <input
-                        id="newPassword"
-                        name="newPassword"
-                        type="password"
+                        type="text"
+                        placeholder="Enter 6-digit OTP"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-center text-2xl tracking-widest"
+                        maxLength={6}
                         required
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                        placeholder="Enter new password"
                       />
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white/50 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                        placeholder="Confirm new password"
-                      />
+                    
+                    {/* Resend OTP */}
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={handleResendOTP}
+                        className="text-purple-300 hover:text-purple-200 text-sm transition-colors"
+                      >
+                        Didn't receive the code? Resend OTP
+                      </button>
                     </div>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Submit Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-xl text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="flex items-center">
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      {step === 'email' && 'Sending OTP...'}
-                      {step === 'otp' && 'Verifying...'}
-                      {step === 'password' && 'Resetting Password...'}
-                    </>
-                  ) : (
-                    <>
-                      {step === 'email' && 'Send OTP'}
-                      {step === 'otp' && 'Verify OTP'}
-                      {step === 'password' && 'Reset Password'}
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                    </>
-                  )}
-                </span>
+                {isLoading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>{step === 'email' ? 'Send OTP' : 'Login'}</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </motion.button>
             </form>
 
-            {/* Back Button */}
-            <div className="mt-6 text-center">
-              {step === 'email' ? (
-                <Link
-                  to="/login"
-                  className="text-purple-600 hover:text-purple-500 font-medium transition-colors inline-flex items-center"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Login
-                </Link>
-              ) : (
+            {/* Navigation */}
+            <div className="mt-6 text-center space-y-4">
+              {step === 'otp' && (
                 <button
+                  type="button"
                   onClick={() => {
-                    if (step === 'otp') setStep('email')
-                    else if (step === 'password') setStep('otp')
+                    setStep('email')
+                    setOtp('')
                     setError('')
+                    setSuccess('')
                   }}
-                  className="text-purple-600 hover:text-purple-500 font-medium transition-colors inline-flex items-center"
+                  className="text-white/70 hover:text-white transition-colors text-sm flex items-center justify-center space-x-2 mx-auto"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Change Email</span>
                 </button>
               )}
+              
+              <Link
+                to="/login"
+                className="text-white/70 hover:text-white transition-colors text-sm flex items-center justify-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Login</span>
+              </Link>
             </div>
-          </motion.div>
-
-          {/* Back to Home */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center mt-6"
-          >
-            <Link
-              to="/"
-              className="text-gray-600 hover:text-purple-600 transition-colors font-medium"
-            >
-              ← Back to Home
-            </Link>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   )

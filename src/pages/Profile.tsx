@@ -6,7 +6,7 @@ import Navigation from '../components/Navigation'
 import { useAuth } from '../contexts/AuthContext'
 
 const Profile: React.FC = () => {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
 
   if (!user) {
     return (
@@ -61,7 +61,7 @@ const Profile: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                   <div>
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">{user.name}</h1>
-                    <p className="text-gray-600 text-lg">@{user.username}</p>
+                    <p className="text-gray-600 text-lg">@{user.email.split('@')[0]}</p>
                   </div>
                   <Link
                     to="/settings"
@@ -74,13 +74,9 @@ const Profile: React.FC = () => {
 
                 {/* Role Badge */}
                 <div className="flex justify-center md:justify-start mb-4">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    isAdmin 
-                      ? 'bg-purple-100 text-purple-800 border border-purple-200' 
-                      : 'bg-blue-100 text-blue-800 border border-blue-200'
-                  }`}>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
                     <Shield className="h-4 w-4 mr-1" />
-                    {isAdmin ? 'Administrator' : 'User'}
+                    User
                   </span>
                 </div>
 
@@ -88,8 +84,7 @@ const Profile: React.FC = () => {
                 <div className="bg-gray-50/50 rounded-xl p-4 mb-4">
                   <h3 className="text-sm font-medium text-gray-700 mb-2">About</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    Welcome to ClickTales! I love capturing moments and creating memories through our amazing photobooth experience. 
-                    {isAdmin && ' As an administrator, I help manage and maintain the platform for all users.'}
+                    Welcome to ClickTales! I love capturing moments and creating memories through our amazing photobooth experience.
                   </p>
                 </div>
               </div>
@@ -124,7 +119,7 @@ const Profile: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-700">Username</p>
-                  <p className="text-gray-900">@{user.username}</p>
+                  <p className="text-gray-900">@{user.email.split('@')[0]}</p>
                 </div>
               </div>
 
@@ -146,7 +141,7 @@ const Profile: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-700">Account Type</p>
-                  <p className="text-gray-900">{isAdmin ? 'Administrator' : 'Standard User'}</p>
+                  <p className="text-gray-900">Standard User</p>
                 </div>
               </div>
             </div>
