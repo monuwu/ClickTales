@@ -1,16 +1,17 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Camera, Image, Layout, FolderOpen } from './icons'
+import { ArrowLeft, Camera, Image, Layout, FolderOpen, Heart } from './icons'
 
 interface GalleryHeaderProps {
-  activeTab: 'photos' | 'collage' | 'albums'
-  onTabChange: (tab: 'photos' | 'collage' | 'albums') => void
+  activeTab: 'photos' | 'collage' | 'albums' | 'favorites'
+  onTabChange: (tab: 'photos' | 'collage' | 'albums' | 'favorites') => void
 }
 
 const GalleryHeader: React.FC<GalleryHeaderProps> = ({ activeTab, onTabChange }) => {
   const tabs = [
     { id: 'photos' as const, label: 'Photos', icon: <Image className="w-5 h-5" /> },
+    { id: 'favorites' as const, label: 'Favorites', icon: <Heart className="w-5 h-5" /> },
     { id: 'collage' as const, label: 'Collage', icon: <Layout className="w-5 h-5" /> },
     { id: 'albums' as const, label: 'Albums', icon: <FolderOpen className="w-5 h-5" /> }
   ]

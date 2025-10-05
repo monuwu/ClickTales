@@ -14,10 +14,15 @@ import PhotoboothHome from './pages/PhotoboothHome'
 import Gallery from './pages/Gallery'
 import CollagePage from './pages/CollagePage'
 import Admin from './pages/Admin'
+<<<<<<< HEAD
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Albums from './pages/Albums'
 import ForgotPassword from './pages/ForgotPassword'
+=======
+import ComponentDemo from './pages/ComponentDemo'
+import Profile from './pages/Profile'
+>>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
 import './App.css'
 import './theme.css'
 
@@ -57,11 +62,34 @@ const AppRoutes: React.FC = () => {
 function App() {
   return (
     <ErrorBoundary>
+<<<<<<< HEAD
       <ThemeProvider>
         <AuthProvider>
           <AppRoutes />
         </AuthProvider>
       </ThemeProvider>
+=======
+      <AuthProvider>
+        <PhotoProvider>
+        <Router>
+          <div className="app">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/photobooth" element={<PhotoboothHome />} />
+              <Route path="/camera" element={<CameraPage />} />
+              <Route path="/preview" element={<PreviewPage />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/profile-setup" element={<ProfileSetup />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/demo" element={<ComponentDemo />} />
+            </Routes>
+          </div>
+        </Router>
+        </PhotoProvider>
+      </AuthProvider>
+>>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
     </ErrorBoundary>
   )
 }

@@ -1,4 +1,5 @@
 import React from 'react'
+<<<<<<< HEAD
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User, Mail, Shield, Calendar, Edit2, Camera } from '../components/icons'
@@ -187,6 +188,24 @@ const Profile: React.FC = () => {
           </motion.div>
         </div>
       </div>
+=======
+import Navigation from '../components/Navigation'
+import UserProfile from '../components/UserProfile'
+import { useAuth } from '../contexts/AuthContext'
+import { Navigate } from 'react-router-dom'
+
+const Profile: React.FC = () => {
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  return (
+    <>
+      <Navigation />
+      <UserProfile />
+>>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
     </>
   )
 }

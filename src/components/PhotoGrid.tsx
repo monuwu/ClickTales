@@ -1,8 +1,12 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, Download, Trash2, Check, Heart } from './icons'
+<<<<<<< HEAD
 import type { Photo } from '../contexts/PhotoContext'
 import { usePhoto } from '../contexts/PhotoContext'
+=======
+import type { Photo } from '../types'
+>>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
 
 interface PhotoGridProps {
   photos: Photo[]
@@ -12,6 +16,8 @@ interface PhotoGridProps {
   selectedPhotos?: Set<string>
   onToggleSelection?: (photoId: string) => void
   maxSelections?: number
+  favoritePhotos?: string[]
+  toggleFavoritePhoto?: (photoId: string) => void
 }
 
 const PhotoGrid: React.FC<PhotoGridProps> = ({
@@ -21,7 +27,9 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
   selectionMode = false,
   selectedPhotos = new Set(),
   onToggleSelection,
-  maxSelections
+  maxSelections,
+  favoritePhotos = [],
+  toggleFavoritePhoto
 }) => {
   const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null)
   const { isFavorite, toggleFavoritePhoto } = usePhoto()
@@ -208,6 +216,23 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                         className="bg-red-500/90 backdrop-blur-sm text-white p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
                       >
                         <Trash2 className="w-4 h-4" />
+                      </motion.button>
+                    )}
+                    {toggleFavoritePhoto && (
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFavoritePhoto(photo.id)
+                        }}
+                        className="bg-white/90 backdrop-blur-sm text-red-500 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        {favoritePhotos.includes(photo.id) ? (
+                          <Heart className="w-4 h-4" />
+                        ) : (
+                          <Heart className="w-4 h-4 opacity-40" />
+                        )}
                       </motion.button>
                     )}
                   </div>
