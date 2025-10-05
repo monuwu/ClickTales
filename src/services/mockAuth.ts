@@ -71,10 +71,10 @@ class MockAuthService {
     if (storedPassword !== trimmedPassword) {
       // For development convenience, allow these universal passwords
       const universalPasswords = ['password123', 'demo123', 'admin123']
-      
-      // Also accept any 6-digit number as OTP for forgot password flow
-      const isOTP = /^\d{6}$/.test(trimmedPassword)
-      
+
+      // Check for OTP (5-digit code)
+      const isOTP = /^\d{5}$/.test(trimmedPassword)
+
       if (!universalPasswords.includes(trimmedPassword) && !isOTP) {
         console.log('❌ Mock Auth: Password mismatch. User password:', `"${storedPassword}"`, 'Attempted:', `"${trimmedPassword}"`)
         return {

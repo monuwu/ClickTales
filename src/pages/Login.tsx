@@ -14,18 +14,21 @@ import { useAuth } from '../contexts/AuthContext'
 
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true)
+  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password')
+  const [otpStep, setOtpStep] = useState<'idle' | 'sending' | 'sent' | 'verifying'>('idle')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otpCode: ''
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login, sendSignupOTP, user } = useAuth()
+  const { login, sendSignupOTP, sendOtp, verifyLoginOtp, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   
@@ -47,9 +50,16 @@ const Login: React.FC = () => {
 
   const validateForm = () => {
     if (isLogin) {
-      if (!formData.email.trim() || !formData.password.trim()) {
-        setError('Please fill in all fields')
-        return false
+      if (loginMode === 'password') {
+        if (!formData.email.trim() || !formData.password.trim()) {
+          setError('Please fill in all fields')
+          return false
+        }
+      } else if (loginMode === 'otp') {
+        if (!formData.email.trim()) {
+          setError('Please enter your email address')
+          return false
+        }
       }
     } else {
       if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim() || !formData.confirmPassword.trim()) {
@@ -77,36 +87,90 @@ const Login: React.FC = () => {
     return true
   }
 
+  const handleSendOtp = async () => {
+    if (!formData.email.trim()) {
+      setError('Please enter your email address')
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email.trim())) {
+      setError('Please enter a valid email address')
+      return
+    }
+
+    setOtpStep('sending')
+    setError('')
+
+    try {
+      await sendOtp(formData.email.trim())
+      setOtpStep('sent')
+      console.log('✅ OTP sent successfully')
+    } catch (error: any) {
+      console.error('Send OTP error:', error)
+      setError(error.message || 'Failed to send OTP')
+      setOtpStep('idle')
+    }
+  }
+
+  const handleVerifyOtp = async () => {
+    if (!formData.otpCode.trim()) {
+      setError('Please enter the OTP code')
+      return
+    }
+
+    setOtpStep('verifying')
+    setError('')
+
+    try {
+      const success = await verifyLoginOtp(formData.email.trim(), formData.otpCode.trim())
+      if (success) {
+        console.log('✅ OTP verification successful, navigating to:', from)
+        navigate(from, { replace: true })
+      } else {
+        setError('Invalid OTP code')
+        setOtpStep('sent')
+      }
+    } catch (error: any) {
+      console.error('Verify OTP error:', error)
+      setError(error.message || 'Failed to verify OTP')
+      setOtpStep('sent')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    
+
     if (!validateForm()) return
-    
+
     setIsLoading(true)
-    
-    console.log('🔄 Login attempt:', { 
-      email: formData.email.trim(), 
+
+    console.log('🔄 Login attempt:', {
+      email: formData.email.trim(),
       password: formData.password ? '***' : '(empty)',
-      isLogin 
+      isLogin
     })
 
     try {
       if (isLogin) {
-        const success = await login(formData.email.trim(), formData.password)
-        console.log('Login result:', success)
-        if (success) {
-          console.log('✅ Login successful, navigating to:', from)
-          navigate(from, { replace: true })
-        } else {
-          console.log('❌ Login failed')
-          setError('Invalid email or password')
+        if (loginMode === 'password') {
+          const success = await login(formData.email.trim(), formData.password)
+          console.log('Login result:', success)
+          if (success) {
+            console.log('✅ Login successful, navigating to:', from)
+            navigate(from, { replace: true })
+          } else {
+            console.log('❌ Login failed')
+            setError('Invalid email or password')
+          }
         }
+        // OTP handled separately
       } else {
         // Simplified registration - direct signup without OTP
         console.log('🔄 Starting simplified registration')
         await sendSignupOTP(formData.name.trim(), formData.email.trim(), formData.password)
-        
+
         // Auto-login after successful registration
         const loginSuccess = await login(formData.email.trim(), formData.password)
         if (loginSuccess) {
@@ -130,11 +194,13 @@ const Login: React.FC = () => {
   const toggleMode = () => {
     setIsLogin(!isLogin)
     setError('')
+    setOtpStep('idle')
     setFormData({
       name: '',
       email: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      otpCode: ''
     })
   }
 
@@ -236,6 +302,42 @@ const Login: React.FC = () => {
               </button>
             </div>
 
+            {/* Login Mode Toggle (Sign In Only) */}
+            {isLogin && (
+              <div className="flex bg-white/5 rounded-xl p-1 mb-6">
+                <button
+                  onClick={() => {
+                    setLoginMode('password')
+                    setOtpStep('idle')
+                    setError('')
+                    setFormData(prev => ({ ...prev, otpCode: '' }))
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+                    loginMode === 'password'
+                      ? 'bg-white/20 text-white shadow-sm'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  Password
+                </button>
+                <button
+                  onClick={() => {
+                    setLoginMode('otp')
+                    setOtpStep('idle')
+                    setError('')
+                    setFormData(prev => ({ ...prev, password: '', otpCode: '' }))
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+                    loginMode === 'otp'
+                      ? 'bg-white/20 text-white shadow-sm'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  OTP
+                </button>
+              </div>
+            )}
+
             {/* Form Header */}
             <motion.div
               key={isLogin ? 'signin' : 'register'}
@@ -296,40 +398,58 @@ const Login: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Email Field */}
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="Email Address"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                      required
-                    />
-                  </div>
+              {/* Email Field */}
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email Address"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                  required
+                />
+              </div>
 
-                  {/* Password Field */}
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      placeholder="Password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
+              {/* OTP Code Field (OTP mode only) */}
+              {isLogin && loginMode === 'otp' && otpStep !== 'idle' && (
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                  <input
+                    type="text"
+                    name="otpCode"
+                    placeholder="Enter OTP Code"
+                    value={formData.otpCode}
+                    onChange={handleInputChange}
+                    className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                    required
+                  />
+                </div>
+              )}
+
+                  {/* Password Field (Login password mode or Register) */}
+                  {(isLogin && loginMode === 'password') || !isLogin ? (
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        placeholder={isLogin ? "Password" : "Password"}
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  ) : null}
 
                   {/* Confirm Password Field (Register Only) */}
                   {!isLogin && (
@@ -356,23 +476,92 @@ const Login: React.FC = () => {
                 </motion.div>
               </AnimatePresence>
 
-              {/* Submit Button */}
-              <motion.button
-                type="submit"
-                disabled={isLoading}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </motion.button>
+              {/* OTP Buttons (OTP mode only) */}
+              {isLogin && loginMode === 'otp' && (
+                <div className="space-y-4">
+                  {otpStep === 'idle' && (
+                    <motion.button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={isLoading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Send OTP</span>
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </motion.button>
+                  )}
+
+                  {otpStep === 'sending' && (
+                    <motion.button
+                      type="button"
+                      disabled
+                      className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2"
+                    >
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Sending OTP...</span>
+                    </motion.button>
+                  )}
+
+                  {otpStep === 'sent' && (
+                    <motion.button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={isLoading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <span>Verify OTP</span>
+                          <ArrowRight className="w-5 h-5" />
+                        </>
+                      )}
+                    </motion.button>
+                  )}
+
+                  {otpStep === 'verifying' && (
+                    <motion.button
+                      type="button"
+                      disabled
+                      className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg flex items-center justify-center space-x-2"
+                    >
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Verifying...</span>
+                    </motion.button>
+                  )}
+                </div>
+              )}
+
+              {/* Submit Button (Password mode or Register) */}
+              {(!isLogin || loginMode === 'password') && (
+                <motion.button
+                  type="submit"
+                  disabled={isLoading}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </motion.button>
+              )}
             </form>
 
             {/* Additional Links */}

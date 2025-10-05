@@ -19,10 +19,10 @@ setInterval(() => {
 }, 5 * 60 * 1000)
 
 /**
- * Generate a random 6-digit OTP
+ * Generate a random 5-digit OTP
  */
 export function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  return Math.floor(10000 + Math.random() * 90000).toString()
 }
 
 /**

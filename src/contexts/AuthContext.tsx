@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { mockAuth, isSupabaseAvailable } from '../services/mockAuth'
+import { sendOTP } from '../services/emailService.js'
+import { generateOTP } from '../utils/otpGenerator'
 import type { Session } from '@supabase/supabase-js'
 
 interface User {
@@ -17,6 +19,8 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
   sendSignupOTP: (name: string, email: string, password: string) => Promise<void>
+  sendOtp: (email: string) => Promise<void>
+  verifyLoginOtp: (email: string, token: string) => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -33,6 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [otpCodes, setOtpCodes] = useState<{ [email: string]: { code: string; name: string } }>({})
 
   useEffect(() => {
     let cleanup: (() => void) | undefined
@@ -269,12 +274,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const sendOtp = async (email: string): Promise<void> => {
+    try {
+      // Generate 6-digit OTP code
+      const otpCode = generateOTP()
+
+      // Send OTP via email service
+      const success = await sendOTP({
+        to_email: email.toLowerCase().trim(),
+        otp_code: otpCode
+      })
+
+      if (!success) {
+        throw new Error('Failed to send OTP email')
+      }
+
+      // Store OTP code for verification with name
+      const name = email.split('@')[0] // Use email prefix as name
+      setOtpCodes(prev => ({ ...prev, [email.toLowerCase().trim()]: { code: otpCode, name } }))
+      console.log(`✅ OTP sent to ${email} with code: ${otpCode}`)
+    } catch (error) {
+      console.error('Send OTP error:', error)
+      throw error
+    }
+  }
+
+  const verifyLoginOtp = async (email: string, token: string): Promise<boolean> => {
+    try {
+      // Determine which auth service to use
+      const available = await isSupabaseAvailable()
+
+      if (available && supabase) {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: email.toLowerCase().trim(),
+          token: token.trim(),
+          type: 'email'
+        })
+
+        if (error) {
+          console.error('Supabase verify OTP error:', error.message)
+          return false
+        }
+
+        if (data.user && data.session) {
+          setSession(data.session)
+          setUser({
+            id: data.user.id,
+            email: data.user.email || '',
+            name: data.user.user_metadata?.name || data.user.user_metadata?.full_name
+          })
+          console.log('✅ Supabase: OTP verification successful')
+          return true
+        }
+      } else {
+        // Mock auth - verify against stored OTP code
+        const storedData = otpCodes[email.toLowerCase().trim()]
+        if (storedData && storedData.code === token) {
+          // Clear the used OTP code
+          setOtpCodes(prev => {
+            const newCodes = { ...prev }
+            delete newCodes[email.toLowerCase().trim()]
+            return newCodes
+          })
+          setUser({
+            id: 'mock-user-id',
+            email: email.toLowerCase().trim(),
+            name: storedData.name
+          })
+          setSession({ user: { id: 'mock-user-id', email: email.toLowerCase().trim() } } as Session)
+          console.log('✅ Mock Auth: OTP verification successful')
+          return true
+        } else {
+          console.error('Mock auth verify OTP error: Invalid OTP')
+          return false
+        }
+      }
+
+      return false
+    } catch (error) {
+      console.error('Verify OTP error:', error)
+      return false
+    }
+  }
+
   const logout = async (): Promise<void> => {
     try {
       // Determine which auth service to use
       const available = await isSupabaseAvailable()
       const authService = (available && supabase) ? supabase.auth : mockAuth
-      
+
       const { error } = await authService.signOut()
       if (error) {
         console.error('Logout error:', error.message)
@@ -293,7 +381,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
-    sendSignupOTP
+    sendSignupOTP,
+    sendOtp,
+    verifyLoginOtp
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
