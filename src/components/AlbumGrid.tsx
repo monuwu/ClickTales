@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, Trash2, Calendar, ImageIcon, X } from '../components/icons'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import { useNotifications } from '../contexts/NotificationContext'
 import type { Album, Photo } from '../contexts/PhotoContext'
 
@@ -106,7 +106,7 @@ const AlbumGrid: React.FC<AlbumGridProps> = ({
   onAlbumDelete,
   showActions = true
 }) => {
-  const { photos, deleteAlbum, isLoading } = usePhoto()
+  const { photos, deleteAlbum, isLoading } = usePhotos()
   const { addNotification } = useNotifications()
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
   const [isViewerOpen, setIsViewerOpen] = useState(false)

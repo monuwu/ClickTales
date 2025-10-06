@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react'
-<<<<<<< HEAD
-import { usePhoto } from '../contexts/PhotoContext'
-=======
 import { usePhotos } from '../contexts/PhotoContext'
 import { useAuth } from '../contexts/AuthContext'
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
 import type { Photo } from '../types'
 
 interface UserProfile {
@@ -28,12 +24,9 @@ interface UserProfileProps {
 }
 
 const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
-<<<<<<< HEAD
-  const { photos } = usePhoto()
-=======
   const { photos } = usePhotos()
-  const { user, isAuthenticated } = useAuth()
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
+  const { user } = useAuth()
+  const isAuthenticated = !!user
   const [profile, setProfile] = useState<UserProfile>({
     id: user?.id || 'user-1',
     name: user?.name || 'Photobooth User',
@@ -57,14 +50,14 @@ const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
       setProfile(prev => ({
         ...prev,
         id: user.id,
-        name: user.name,
-        email: user.email
+        name: user.name || 'Photobooth User',
+        email: user.email || 'user@photobooth.com'
       }))
       setEditForm(prev => ({
         ...prev,
         id: user.id,
-        name: user.name,
-        email: user.email
+        name: user.name || 'Photobooth User',
+        email: user.email || 'user@photobooth.com'
       }))
     }
   }, [user])
@@ -79,8 +72,8 @@ const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
         const mergedProfile = {
           ...parsed,
           id: user?.id || parsed.id,
-          name: user?.name || parsed.name,
-          email: user?.email || parsed.email
+          name: user?.name || parsed.name || 'Photobooth User',
+          email: user?.email || parsed.email || 'user@photobooth.com'
         }
         setProfile(mergedProfile)
         setEditForm(mergedProfile)
@@ -91,8 +84,8 @@ const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
       // If no saved profile but user is authenticated, create initial profile
       const initialProfile: UserProfile = {
         id: user.id,
-        name: user.name,
-        email: user.email,
+        name: user.name || 'Photobooth User',
+        email: user.email || 'user@photobooth.com',
         favoritePhotos: [],
         sessionCount: 0,
         totalPhotos: 0,

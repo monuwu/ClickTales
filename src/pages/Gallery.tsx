@@ -1,20 +1,15 @@
 import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-<<<<<<< HEAD
-import { usePhoto } from '../contexts/PhotoContext'
-import { usePDFDownload } from '../hooks/usePDFDownload'
-=======
 import { usePhotos } from '../contexts/PhotoContext'
 import { Heart } from '../components/icons'
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
-import { 
-  GalleryHeader, 
-  PhotoGrid, 
+import {
+  GalleryHeader,
+  PhotoGrid,
   CollageSection
 } from '../components'
-import { 
-  Heart, 
-  Download, 
+import {
+  Heart as HeartIcon,
+  Download,
   Loader
 } from '../components/icons'
 import AlbumGrid from '../components/AlbumGrid'
@@ -25,28 +20,22 @@ import type { Photo, Album } from '../contexts/PhotoContext'
 type GalleryTab = 'photos' | 'favorites' | 'collage' | 'albums'
 
 const Gallery: React.FC = () => {
-<<<<<<< HEAD
-  const { photos, addPhoto, deletePhoto } = usePhoto()
-  const { albums, getFavoritePhotos } = usePhoto()
-  const { downloadPhotosAsZip, isGenerating, progress, error } = usePDFDownload()
-=======
-  const { photos, addPhoto, deletePhoto, favoritePhotos, toggleFavoritePhoto } = usePhotos()
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
+  const { photos, addPhoto, deletePhoto, favoritePhotos, toggleFavoritePhoto, albums } = usePhotos()
   const [activeTab, setActiveTab] = useState<GalleryTab>('photos')
 
   // Handle photo selection for various operations
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
-  
+
   // Album-specific state
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
   const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false)
 
   // Filter photos based on favorites toggle
   const displayedPhotos = useMemo(() => {
-    return showFavoritesOnly ? getFavoritePhotos() : photos
-  }, [showFavoritesOnly, getFavoritePhotos, photos])
+    return showFavoritesOnly ? photos.filter(photo => favoritePhotos.includes(photo.id)) : photos
+  }, [showFavoritesOnly, photos, favoritePhotos])
 
   const handlePhotoSelect = (photo: Photo) => {
     // For photo viewing, open in preview
@@ -54,7 +43,7 @@ const Gallery: React.FC = () => {
       // Photo viewing is handled by PhotoGrid component internally
       return
     }
-    
+
     // For selection mode, toggle selection
     setSelectedPhotos(prev => {
       const newSet = new Set(prev)
@@ -90,13 +79,22 @@ const Gallery: React.FC = () => {
 
   const handleBulkDownload = async () => {
     if (selectedPhotos.size === 0) return
-    
-    const selectedPhotoObjects = displayedPhotos.filter(photo => 
+
+    const selectedPhotoObjects = displayedPhotos.filter(photo =>
       selectedPhotos.has(photo.id)
     )
-    
+
     try {
-      await downloadPhotosAsZip(selectedPhotoObjects, `photos-${Date.now()}.zip`)
+      // Create download links for selected photos
+      selectedPhotoObjects.forEach((photo, index) => {
+        const link = document.createElement('a')
+        link.href = photo.url
+        link.download = photo.filename
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      })
       clearSelection()
     } catch (error) {
       console.error('Failed to download photos:', error)
@@ -113,7 +111,7 @@ const Gallery: React.FC = () => {
       timestamp: new Date(),
       isCollage: true
     }
-    
+
     addPhoto(collagePhoto)
   }
 
@@ -146,11 +144,11 @@ const Gallery: React.FC = () => {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800">Your Photos</h2>
                   <p className="text-gray-600">
-                    {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''} 
+                    {displayedPhotos.length} photo{displayedPhotos.length !== 1 ? 's' : ''}
                     {showFavoritesOnly ? ' in favorites' : ' in your collection'}
                   </p>
                 </div>
-                
+
                 <div className="flex items-center space-x-3">
                   {/* Favorites Filter Toggle */}
                   <motion.button
@@ -163,7 +161,7 @@ const Gallery: React.FC = () => {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    <Heart className={`w-4 h-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+                    <HeartIcon className={`w-4 h-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
                     Favorites
                   </motion.button>
 
@@ -176,23 +174,13 @@ const Gallery: React.FC = () => {
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={handleBulkDownload}
-                              disabled={isGenerating}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 disabled:opacity-50"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
                             >
-                              {isGenerating ? (
-                                <>
-                                  <Loader className="w-4 h-4 animate-spin" />
-                                  Downloading...
-                                </>
-                              ) : (
-                                <>
-                                  <Download className="w-4 h-4" />
-                                  Download ({selectedPhotos.size})
-                                </>
-                              )}
+                              <Download className="w-4 h-4" />
+                              Download ({selectedPhotos.size})
                             </motion.button>
                           )}
-                          
+
                           <button
                             onClick={clearSelection}
                             className="px-4 py-2 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-colors duration-200"
@@ -202,32 +190,7 @@ const Gallery: React.FC = () => {
                         </>
                       ) : (
                         <button
-<<<<<<< HEAD
                           onClick={() => setSelectionMode(true)}
-=======
-                          onClick={clearSelection}
-                          className="px-4 py-2 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-colors duration-200"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            selectedPhotos.forEach(photoId => {
-                              deletePhoto(photoId)
-                            })
-                            clearSelection()
-                          }}
-                          className="px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors duration-200"
-                          disabled={selectedPhotos.size === 0}
-                        >
-                          Delete ({selectedPhotos.size})
-                        </button>
-                        <button
-                          onClick={() => {
-                            // Could add bulk operations here
-                            clearSelection()
-                          }}
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
                           className="px-4 py-2 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors duration-200"
                         >
                           Select Photos
@@ -237,48 +200,6 @@ const Gallery: React.FC = () => {
                   )}
                 </div>
               </div>
-
-              {/* Download Progress Indicator */}
-              {isGenerating && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl"
-                >
-                  <div className="flex items-center gap-3">
-                    <Loader className="w-5 h-5 text-blue-600 animate-spin" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-900">
-                        {progress.message || 'Preparing download...'}
-                      </p>
-                      <div className="mt-1 bg-blue-200 rounded-full h-2">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progress.progress}%` }}
-                          transition={{ duration: 0.3 }}
-                          className="h-full bg-blue-600 rounded-full"
-                        />
-                      </div>
-                      {progress.currentPhoto && progress.totalPhotos && (
-                        <p className="text-xs text-blue-700 mt-1">
-                          Processing photo {progress.currentPhoto} of {progress.totalPhotos}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Error Display */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl"
-                >
-                  <p className="text-sm text-red-700">{error}</p>
-                </motion.div>
-              )}
 
               <PhotoGrid
                 photos={displayedPhotos}
@@ -342,7 +263,7 @@ const Gallery: React.FC = () => {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-                    <Heart className="w-6 h-6 mr-2 text-red-500" />
+                    <HeartIcon className="w-6 h-6 mr-2 text-red-500" />
                     Favorite Photos
                   </h2>
                   <p className="text-gray-600">
@@ -396,7 +317,7 @@ const Gallery: React.FC = () => {
                 />
               ) : (
                 <div className="text-center py-12">
-                  <Heart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <HeartIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                   <h3 className="text-lg font-medium text-gray-500 mb-2">No favorite photos yet</h3>
                   <p className="text-gray-400">Click the heart icon on photos to add them to your favorites</p>
                 </div>
@@ -440,8 +361,8 @@ const Gallery: React.FC = () => {
                 </div>
 
                 {albums && albums.length > 0 ? (
-                  <AlbumGrid 
-                    albums={albums} 
+                  <AlbumGrid
+                    albums={albums}
                     onAlbumSelect={(album) => setSelectedAlbum(album)}
                   />
                 ) : (

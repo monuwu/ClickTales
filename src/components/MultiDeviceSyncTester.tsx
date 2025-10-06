@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '../services/supabase'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import { CheckCircle, XCircle, AlertCircle, Loader, Monitor, Smartphone } from './icons'
 
 interface DeviceInfo {
@@ -24,7 +24,7 @@ const MultiDeviceSyncTester: React.FC = () => {
   const [devices, setDevices] = useState<DeviceInfo[]>([])
   const [testResults, setTestResults] = useState<SyncTestResult[]>([])
   const [isRunningTests, setIsRunningTests] = useState(false)
-  const { photos, albums } = usePhoto()
+  const { photos, albums } = usePhotos()
 
   // Generate unique device ID
   const getDeviceId = () => {

@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, RotateCcw, Share, Save } from '../components/icons'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import { useNotifications } from '../contexts/NotificationContext'
 
 interface LocationState {
@@ -13,7 +13,7 @@ const PreviewPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as LocationState
-  const { addPhoto } = usePhoto()
+  const { addPhoto } = usePhotos()
   const { addNotification } = useNotifications()
 
   // If no image data, redirect to camera

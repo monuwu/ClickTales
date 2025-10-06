@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { BulkDownloadService, type DownloadProgress } from '../services/bulkDownloadService'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import { useNotifications } from '../contexts/NotificationContext'
 import { Download, ImageIcon, Heart, FolderOpen, X, AlertTriangle } from './icons'
 import type { Photo, Album } from '../contexts/PhotoContext'
@@ -25,7 +25,7 @@ export const BulkDownloadModal: React.FC<BulkDownloadModalProps> = ({
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null)
   const [estimatedSize, setEstimatedSize] = useState<string>('')
   
-  const { photos, favoritePhotos, getAlbumPhotos } = usePhoto()
+  const { photos, favoritePhotos, getAlbumPhotos } = usePhotos()
   const { addNotification } = useNotifications()
 
   // Get photos based on download type

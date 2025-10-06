@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Camera, ArrowLeft, RotateCcw, Timer as TimerIcon, Palette, Sparkles, Settings, Download, Grid } from '../components/icons'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import { useNotifications } from '../contexts/NotificationContext'
 import Timer from '../components/Timer'
 import { Filters } from '../components'
@@ -13,7 +13,7 @@ import { enhanceCanvasInPlace } from '../utils/enhanceImage'
 
 const CameraPage: React.FC = () => {
   const navigate = useNavigate()
-  const { addPhoto } = usePhoto()
+  const { addPhoto } = usePhotos()
   const { addNotification } = useNotifications()
   
   // Refs

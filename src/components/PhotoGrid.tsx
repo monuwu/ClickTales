@@ -1,12 +1,7 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, Download, Trash2, Check, Heart } from './icons'
-<<<<<<< HEAD
 import type { Photo } from '../contexts/PhotoContext'
-import { usePhoto } from '../contexts/PhotoContext'
-=======
-import type { Photo } from '../types'
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
 
 interface PhotoGridProps {
   photos: Photo[]
@@ -32,7 +27,6 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
   toggleFavoritePhoto
 }) => {
   const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null)
-  const { isFavorite, toggleFavoritePhoto } = usePhoto()
 
   const handleDownload = (photo: Photo) => {
     const link = document.createElement('a')
@@ -62,7 +56,9 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
 
   const handleFavoriteToggle = (photoId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    toggleFavoritePhoto(photoId)
+    if (toggleFavoritePhoto) {
+      toggleFavoritePhoto(photoId)
+    }
   }
 
   const containerVariants = {
@@ -128,7 +124,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                 alt={photo.filename}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
-              
+
               {/* Heart button overlay - always visible */}
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -136,15 +132,15 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                 onClick={(e) => handleFavoriteToggle(photo.id, e)}
                 className="absolute top-2 left-2 z-10"
               >
-                <Heart 
+                <Heart
                   className={`w-6 h-6 transition-all duration-200 drop-shadow-lg ${
-                    isFavorite(photo.id) 
-                      ? 'text-red-500 fill-red-500' 
+                    favoritePhotos.includes(photo.id)
+                      ? 'text-red-500 fill-red-500'
                       : 'text-white/80 hover:text-red-400'
                   }`}
                 />
               </motion.button>
-              
+
               {/* Selection overlay */}
               {selectionMode && (
                 <div
@@ -155,8 +151,8 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                 >
                   <div className="absolute top-2 right-2">
                     <div className={`w-6 h-6 rounded-full border-2 border-white flex items-center justify-center transition-all duration-200 ${
-                      selectedPhotos.has(photo.id) 
-                        ? 'bg-purple-600 scale-110' 
+                      selectedPhotos.has(photo.id)
+                        ? 'bg-purple-600 scale-110'
                         : 'bg-white/80 hover:bg-white'
                     }`}>
                       {selectedPhotos.has(photo.id) && (
@@ -176,14 +172,14 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => handleFavoriteToggle(photo.id, e)}
                       className={`backdrop-blur-sm p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 ${
-                        isFavorite(photo.id)
+                        favoritePhotos.includes(photo.id)
                           ? 'bg-red-500/90 text-white'
                           : 'bg-white/90 text-gray-700 hover:bg-red-50'
                       }`}
                     >
-                      <Heart className={`w-4 h-4 ${isFavorite(photo.id) ? 'fill-white' : ''}`} />
+                      <Heart className={`w-4 h-4 ${favoritePhotos.includes(photo.id) ? 'fill-white' : ''}`} />
                     </motion.button>
-                    
+
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -195,7 +191,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                     >
                       <Eye className="w-4 h-4" />
                     </motion.button>
-                    
+
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
@@ -207,7 +203,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                     >
                       <Download className="w-4 h-4" />
                     </motion.button>
-                    
+
                     {onPhotoDelete && (
                       <motion.button
                         whileHover={{ scale: 1.1 }}
@@ -218,28 +214,11 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                         <Trash2 className="w-4 h-4" />
                       </motion.button>
                     )}
-                    {toggleFavoritePhoto && (
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleFavoritePhoto(photo.id)
-                        }}
-                        className="bg-white/90 backdrop-blur-sm text-red-500 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
-                      >
-                        {favoritePhotos.includes(photo.id) ? (
-                          <Heart className="w-4 h-4" />
-                        ) : (
-                          <Heart className="w-4 h-4 opacity-40" />
-                        )}
-                      </motion.button>
-                    )}
                   </div>
                 </div>
               )}
             </div>
-            
+
             {/* Photo info */}
             <div className="mt-2 px-1">
               <p className="text-xs text-gray-500 truncate">{photo.filename}</p>
@@ -274,7 +253,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                 alt={previewPhoto.filename}
                 className="w-full h-full object-contain"
               />
-              
+
               <div className="absolute top-4 right-4 flex space-x-2">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -284,7 +263,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                 >
                   <Download className="w-5 h-5" />
                 </motion.button>
-                
+
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -294,7 +273,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                   ×
                 </motion.button>
               </div>
-              
+
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
                 <h3 className="text-white font-semibold text-lg">{previewPhoto.filename}</h3>
                 <p className="text-white/80 text-sm">

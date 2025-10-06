@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, FolderPlus as AlbumIcon } from '../components/icons'
 import PhotoGrid from './PhotoGrid'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import { useNotifications } from '../contexts/NotificationContext'
 
 interface CreateAlbumProps {
@@ -12,7 +12,7 @@ interface CreateAlbumProps {
 }
 
 const CreateAlbum: React.FC<CreateAlbumProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { photos, createAlbum, isLoading } = usePhoto()
+  const { photos, createAlbum, isLoading } = usePhotos()
   const { addNotification } = useNotifications()
 
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())

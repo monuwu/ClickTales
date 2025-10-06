@@ -1,5 +1,4 @@
 import React from 'react'
-<<<<<<< HEAD
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User, Mail, Shield, Calendar, Edit2, Camera } from '../components/icons'
@@ -28,10 +27,10 @@ const Profile: React.FC = () => {
     )
   }
 
-  const joinDate = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const joinDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   })
 
   return (
@@ -100,7 +99,7 @@ const Profile: React.FC = () => {
             className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-8 mb-8"
           >
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Account Information</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Email */}
               <div className="flex items-center space-x-4 p-4 bg-gray-50/50 rounded-xl">
@@ -156,7 +155,7 @@ const Profile: React.FC = () => {
             className="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 p-8"
           >
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Activity Overview</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Photos Taken */}
               <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
@@ -188,24 +187,6 @@ const Profile: React.FC = () => {
           </motion.div>
         </div>
       </div>
-=======
-import Navigation from '../components/Navigation'
-import UserProfile from '../components/UserProfile'
-import { useAuth } from '../contexts/AuthContext'
-import { Navigate } from 'react-router-dom'
-
-const Profile: React.FC = () => {
-  const { isAuthenticated } = useAuth()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  return (
-    <>
-      <Navigation />
-      <UserProfile />
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
     </>
   )
 }

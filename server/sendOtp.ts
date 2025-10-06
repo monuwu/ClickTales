@@ -23,6 +23,15 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Verify transporter configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('SMTP Transporter verification failed:', error);
+  } else {
+    console.log('SMTP Transporter is ready to send emails');
+  }
+});
+
 // Basic email format validation
 function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

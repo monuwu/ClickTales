@@ -6,11 +6,11 @@ import UserProfile from '../components/UserProfile'
 import Settings from '../components/Settings'
 import { LoadingSpinner, PhotoSkeleton, CameraLoading, ProgressBar } from '../components/LoadingComponents'
 import AccessibilityHelper from '../components/AccessibilityHelper'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import type { Photo, PhotoboothConfig } from '../types'
 
 const ComponentDemo: React.FC = () => {
-  const { } = usePhoto()
+  const { } = usePhotos()
   const [activeDemo, setActiveDemo] = useState<string | null>(null)
   const [samplePhoto] = useState<Photo>({
     id: 'demo-photo',

@@ -69,8 +69,6 @@ export default defineConfig({
         target: 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
-<<<<<<< HEAD
-=======
       },
       '/register': {
         target: 'http://127.0.0.1:4000',
@@ -86,7 +84,6 @@ export default defineConfig({
         target: 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
->>>>>>> 474ef572850d675b821af8d159b2cb8cd72085a0
       }
     }
   },

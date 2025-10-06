@@ -16,7 +16,7 @@ import {
 } from './icons'
 import PhotoGrid from './PhotoGrid'
 import PDFPreviewModal from './PDFPreviewModal'
-import { usePhoto, type Album, type Photo } from '../contexts/PhotoContext'
+import { usePhotos, type Album, type Photo } from '../contexts/PhotoContext'
 import { usePDFDownload } from '../hooks/usePDFDownload'
 
 type SortOption = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc'
@@ -32,12 +32,12 @@ const AlbumViewer: React.FC<AlbumViewerProps> = ({
   onBack,
   onEdit
 }) => {
-  const { 
-    getAlbumPhotos, 
-    deleteAlbum, 
-    removePhotoFromAlbum, 
-    photos 
-  } = usePhoto()
+  const {
+    getAlbumPhotos,
+    deleteAlbum,
+    removePhotoFromAlbum,
+    photos
+  } = usePhotos()
   
   const { generateAlbumPDF, isGenerating, progress, error } = usePDFDownload()
   

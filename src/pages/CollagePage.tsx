@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos } from '../contexts/PhotoContext'
 import Collage, { type CollageLayout, collageLayouts } from '../components/Collage'
 
 const CollagePage: React.FC = () => {
   const navigate = useNavigate()
-  const { photos } = usePhoto()
+  const { photos } = usePhotos()
   const [selectedLayout, setSelectedLayout] = useState<string>(collageLayouts[0].id)
 
   const handleLayoutSelect = (layout: CollageLayout) => {
