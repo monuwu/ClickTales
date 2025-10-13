@@ -88,14 +88,29 @@ const PhotoboothHome = () => {
   }
 
   const handleSharePhoto = () => {
-    // This could integrate with actual sharing APIs
-    // For now, we'll just increment prints counter
-    setTodaysStats(prev => ({ 
-      ...prev, 
-      prints: prev.prints + 1 
-    }))
-    // Add share functionality here
-    alert('Photo shared! (Feature coming soon)')
+    if (capturedPhoto) {
+      // Use Web Share API if available, otherwise fallback to download
+      if (navigator.share) {
+        // Convert data URL to blob for sharing
+        fetch(capturedPhoto)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
+            return navigator.share({
+              title: 'ClickTales Photo',
+              text: 'Check out this photo from ClickTales!',
+              files: [file]
+            })
+          })
+          .then(() => {
+            setTodaysStats(prev => ({ ...prev, prints: prev.prints + 1 }))
+          })
+          .catch(() => handleDownloadPhoto()) // Fallback to download
+      } else {
+        // Fallback: trigger download
+        handleDownloadPhoto()
+      }
+    }
   }
 
   const resetCapture = () => {

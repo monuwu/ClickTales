@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { usePhotos } from '../contexts/PhotoContext'
+import { useAuth } from '../contexts/AuthContext'
 import type { Photo } from '../types'
 
 interface UserProfile {
@@ -24,10 +25,12 @@ interface UserProfileProps {
 
 const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
   const { photos } = usePhotos()
+  const { user } = useAuth()
+  const isAuthenticated = !!user
   const [profile, setProfile] = useState<UserProfile>({
-    id: 'user-1',
-    name: 'Photobooth User',
-    email: 'user@photobooth.com',
+    id: user?.id || 'user-1',
+    name: user?.name || 'Photobooth User',
+    email: user?.email || 'user@photobooth.com',
     favoritePhotos: [],
     sessionCount: 0,
     totalPhotos: 0,
@@ -42,18 +45,63 @@ const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
   const [editForm, setEditForm] = useState(profile)
 
   useEffect(() => {
+    // Update profile when user changes (after login/signup)
+    if (user) {
+      setProfile(prev => ({
+        ...prev,
+        id: user.id,
+        name: user.name || 'Photobooth User',
+        email: user.email || 'user@photobooth.com'
+      }))
+      setEditForm(prev => ({
+        ...prev,
+        id: user.id,
+        name: user.name || 'Photobooth User',
+        email: user.email || 'user@photobooth.com'
+      }))
+    }
+  }, [user])
+
+  useEffect(() => {
     // Load profile from localStorage
     const savedProfile = localStorage.getItem('photobooth-profile')
     if (savedProfile) {
       try {
         const parsed = JSON.parse(savedProfile)
-        setProfile(parsed)
-        setEditForm(parsed)
+        // Merge with current user data to ensure consistency
+        const mergedProfile = {
+          ...parsed,
+          id: user?.id || parsed.id,
+          name: user?.name || parsed.name || 'Photobooth User',
+          email: user?.email || parsed.email || 'user@photobooth.com'
+        }
+        setProfile(mergedProfile)
+        setEditForm(mergedProfile)
       } catch (error) {
         console.error('Failed to load profile:', error)
       }
+    } else if (user) {
+      // If no saved profile but user is authenticated, create initial profile
+      const initialProfile: UserProfile = {
+        id: user.id,
+        name: user.name || 'Photobooth User',
+        email: user.email || 'user@photobooth.com',
+        favoritePhotos: [],
+        sessionCount: 0,
+        totalPhotos: 0,
+        lastActive: new Date(),
+        preferences: {
+          defaultFilter: 'none',
+          autoSave: true,
+          showTimestamp: true
+        }
+      }
+      setProfile(initialProfile)
+      setEditForm(initialProfile)
+      // Auto-save the initial profile
+      localStorage.setItem('photobooth-profile', JSON.stringify(initialProfile))
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     // Update profile stats based on photos
@@ -65,8 +113,10 @@ const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
   }, [photos])
 
   useEffect(() => {
-    // Save profile to localStorage
-    localStorage.setItem('photobooth-profile', JSON.stringify(profile))
+    // Save profile to localStorage whenever it changes
+    if (profile.id !== 'user-1') { // Don't save dummy data
+      localStorage.setItem('photobooth-profile', JSON.stringify(profile))
+    }
   }, [profile])
 
   const toggleFavorite = (photoId: string) => {
@@ -114,6 +164,10 @@ const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
   const favoritePhotos = getFavoritePhotos()
   const recentPhotos = getRecentPhotos()
 
+  if (!isAuthenticated) {
+    return <div>Please log in to view your profile.</div>
+  }
+
   return (
     <div className="profile-overlay">
       <div className="profile-modal">
@@ -145,7 +199,7 @@ const UserProfileComponent: React.FC<UserProfileProps> = ({ onClose }) => {
                       Last active: {profile.lastActive.toLocaleDateString()}
                     </p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setIsEditing(true)}
                     className="edit-btn"
                   >

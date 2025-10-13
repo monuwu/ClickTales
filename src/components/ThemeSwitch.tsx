@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import styled from "styled-components";
 
 const ThemeSwitch: React.FC = () => {
   const [darkMode, setDarkMode] = useState<boolean>(false);
@@ -13,8 +12,82 @@ const ThemeSwitch: React.FC = () => {
     }
   }, [darkMode]);
 
+  useEffect(() => {
+    // Add styles to head
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .theme-switch-wrapper {
+        color: #bbb;
+        width: 3em;
+      }
+
+      .st-sunMoonThemeToggleBtn {
+        position: relative;
+        cursor: pointer;
+      }
+
+      .st-sunMoonThemeToggleBtn .themeToggleInput {
+        opacity: 0;
+        width: 100%;
+        aspect-ratio: 1;
+      }
+
+      .st-sunMoonThemeToggleBtn svg {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.4s ease;
+        transform: rotate(40deg);
+      }
+
+      .st-sunMoonThemeToggleBtn svg .sunMoon {
+        transform-origin: center center;
+        transition: inherit;
+        transform: scale(1);
+      }
+
+      .st-sunMoonThemeToggleBtn svg .sunRay {
+        transform-origin: center center;
+        transform: scale(0);
+      }
+
+      .st-sunMoonThemeToggleBtn svg mask > circle {
+        transition: transform 0.64s cubic-bezier(0.41, 0.64, 0.32, 1.575);
+        transform: translate(0px, 0px);
+      }
+
+      .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg {
+        transform: rotate(90deg);
+      }
+      .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg mask > circle {
+        transform: translate(16px, -3px);
+      }
+      .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg .sunMoon {
+        transform: scale(0.55);
+      }
+      .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg .sunRay {
+        animation: showRay1832 0.4s ease 0s 1 forwards;
+      }
+
+      @keyframes showRay1832 {
+        0% {
+          transform: scale(0);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
-    <StyledWrapper>
+    <div className="theme-switch-wrapper">
       <label htmlFor="themeToggle" className="themeToggle st-sunMoonThemeToggleBtn">
         <input
           type="checkbox"
@@ -39,73 +112,8 @@ const ThemeSwitch: React.FC = () => {
           </g>
         </svg>
       </label>
-    </StyledWrapper>
+    </div>
   );
 };
-
-const StyledWrapper = styled.div`
-  .themeToggle {
-    color: #bbb;
-    width: 3em;
-  }
-
-  .st-sunMoonThemeToggleBtn {
-    position: relative;
-    cursor: pointer;
-  }
-
-  .st-sunMoonThemeToggleBtn .themeToggleInput {
-    opacity: 0;
-    width: 100%;
-    aspect-ratio: 1;
-  }
-
-  .st-sunMoonThemeToggleBtn svg {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.4s ease;
-    transform: rotate(40deg);
-  }
-
-  .st-sunMoonThemeToggleBtn svg .sunMoon {
-    transform-origin: center center;
-    transition: inherit;
-    transform: scale(1);
-  }
-
-  .st-sunMoonThemeToggleBtn svg .sunRay {
-    transform-origin: center center;
-    transform: scale(0);
-  }
-
-  .st-sunMoonThemeToggleBtn svg mask > circle {
-    transition: transform 0.64s cubic-bezier(0.41, 0.64, 0.32, 1.575);
-    transform: translate(0px, 0px);
-  }
-
-  .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg {
-    transform: rotate(90deg);
-  }
-  .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg mask > circle {
-    transform: translate(16px, -3px);
-  }
-  .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg .sunMoon {
-    transform: scale(0.55);
-  }
-  .st-sunMoonThemeToggleBtn .themeToggleInput:checked + svg .sunRay {
-    animation: showRay1832 0.4s ease 0s 1 forwards;
-  }
-
-  @keyframes showRay1832 {
-    0% {
-      transform: scale(0);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-`;
 
 export default ThemeSwitch;

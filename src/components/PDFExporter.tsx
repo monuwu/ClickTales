@@ -31,7 +31,9 @@ export class PDFExporter {
   }
 
   async exportAlbumToPDF(album: Album, photos: Photo[]): Promise<void> {
-    const albumPhotos = photos.filter(photo => album.photoIds.includes(photo.id))
+    const albumPhotos = photos.filter(photo => 
+      album.photos?.some(albumPhoto => albumPhoto.photoId === photo.id)
+    )
     
     if (albumPhotos.length === 0) {
       throw new Error('No photos found in album')
@@ -44,7 +46,7 @@ export class PDFExporter {
     await this.addPhotosToPDF(albumPhotos)
 
     // Save the PDF
-    this.pdf.save(`${this.sanitizeFilename(album.name)}.pdf`)
+    this.pdf.save(`${this.sanitizeFilename(album.title)}.pdf`)
   }
 
   async exportPhotosToPDF(photos: Photo[], title: string = 'Photo Collection'): Promise<void> {
@@ -53,7 +55,15 @@ export class PDFExporter {
     }
 
     // Add title page
-    this.addTitlePage({ name: title, description: `${photos.length} photos` } as Album)
+    this.addTitlePage({ 
+      id: 'temp', 
+      title: title, 
+      description: `${photos.length} photos`,
+      isPublic: false,
+      userId: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })
 
     // Add photos
     await this.addPhotosToPDF(photos)
@@ -81,7 +91,7 @@ export class PDFExporter {
     this.pdf.setFontSize(32)
     this.pdf.setFont('helvetica', 'bold')
     
-    const titleLines = this.pdf.splitTextToSize(album.name, pageWidth - 40)
+    const titleLines = this.pdf.splitTextToSize(album.title, pageWidth - 40)
     const titleHeight = titleLines.length * 12
     const titleY = (pageHeight - titleHeight) / 2
     
@@ -99,7 +109,7 @@ export class PDFExporter {
     if (this.options.includeMetadata) {
       this.pdf.setFontSize(10)
       const createdDate = album.createdAt ? new Date(album.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
-      const photoCount = album.photoIds?.length || 0
+      const photoCount = album.photos?.length || album._count?.photos || 0
       this.pdf.text(`Created: ${createdDate} • ${photoCount} photos`, pageWidth / 2, pageHeight - 30, { align: 'center' })
     }
 

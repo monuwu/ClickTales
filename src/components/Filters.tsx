@@ -93,7 +93,7 @@ export const EnhancementPanel: React.FC<EnhancementPanelProps> = ({ isVisible, v
   return (
     <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 bg-white/90 backdrop-blur-lg border border-purple-200/50 rounded-2xl shadow-xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-800">AI Enhancement</h3>
+        <h3 className="text-sm font-semibold text-gray-800">Image Enhancement</h3>
         <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
       </div>
       <div className="space-y-3">

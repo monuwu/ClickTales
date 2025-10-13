@@ -36,6 +36,9 @@ import {
   FiChevronDown as ChevronDown,
   FiInfo as Info,
   FiCheckCircle as CheckCircle,
+  FiXCircle as XCircle,
+  FiAlertTriangle as AlertTriangle,
+  FiAlertCircle as AlertCircle,
   FiLogIn as LogIn,
   FiMoon as Moon,
   FiSun as Sun,
@@ -46,7 +49,17 @@ import {
   FiImage as ImageIcon,
   FiPlus as Plus,
   FiRotateCcw as RotateCcwIcon,
-  FiEdit2 as Edit2
+  FiEdit2 as Edit2,
+  FiEdit3 as Edit3,
+  FiStar as Star,
+  FiFolderPlus as FolderPlus,
+  FiArrowDown as ArrowUpDown,
+  FiLoader as Loader,
+  FiFile as FileText,
+  FiWifi as Wifi,
+  FiWifiOff as WifiOff,
+  FiCloud as Cloud,
+  FiCloudOff as CloudOff
 } from 'react-icons/fi'
 import { MdPalette as Palette, MdGrid3X3 as Grid3X3 } from 'react-icons/md'
 
@@ -89,6 +102,9 @@ export {
   ChevronDown,
   Info,
   CheckCircle,
+  XCircle,
+  AlertTriangle,
+  AlertCircle,
   LogIn,
   Moon,
   Sun,
@@ -99,9 +115,20 @@ export {
   FolderOpen,
   ImageIcon,
   Plus,
-  Edit2
+  Edit2,
+  Edit3,
+  Star,
+  FolderPlus,
+  ArrowUpDown,
+  Loader,
+  FileText,
+  Wifi,
+  WifiOff,
+  Cloud,
+  CloudOff
 }
 
 export const RotateCcw = RotateCcwIcon
 export const TimerIcon = Timer
 export const Image = ImageIcon
+export const Folder = FolderOpen

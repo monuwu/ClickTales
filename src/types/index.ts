@@ -1,14 +1,18 @@
+// Export album types
+export * from './album'
+
 export interface Photo {
   id: string
   url: string
-  thumbnail: string
+  thumbnail?: string
   timestamp: Date
   filename: string
   filter?: string
   isCollage?: boolean
 }
 
-export interface Album {
+// Legacy Album interface - kept for backward compatibility
+export interface LegacyAlbum {
   id: string
   name: string
   photoIds: string[]
