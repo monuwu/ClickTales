@@ -103,7 +103,7 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
 
   // Selection handlers
   const togglePhotoSelection = useCallback((photoId: string) => {
-    setSelectedPhotos(prev => {
+    setSelectedPhotos((prev: Set<string>) => {
       const newSet = new Set(prev)
       if (newSet.has(photoId)) {
         newSet.delete(photoId)
@@ -115,7 +115,7 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
   }, [])
 
   const selectAllPhotos = useCallback(() => {
-    setSelectedPhotos(new Set(filteredAndSortedPhotos.map(p => p.id)))
+    setSelectedPhotos(new Set(filteredAndSortedPhotos.map((p: Photo) => p.id)))
   }, [filteredAndSortedPhotos])
 
   const clearSelection = useCallback(() => {
@@ -126,7 +126,7 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
   // Bulk operations
   const handleBulkUnfavorite = useCallback(async () => {
     try {
-      const promises = Array.from(selectedPhotos).map(photoId => 
+      const promises = Array.from(selectedPhotos).map((photoId: string) => 
         toggleFavoritePhoto(photoId)
       )
       await Promise.all(promises)
@@ -153,7 +153,7 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
     }
 
     try {
-      const promises = Array.from(selectedPhotos).map(photoId => deletePhoto(photoId))
+      const promises = Array.from(selectedPhotos).map((photoId: string) => deletePhoto(photoId))
       await Promise.all(promises)
       
       addNotification({
@@ -173,7 +173,7 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
   }, [selectedPhotos, deletePhoto, addNotification, clearSelection])
 
   const getSelectedPhotos = useCallback(() => {
-    return filteredAndSortedPhotos.filter(photo => selectedPhotos.has(photo.id))
+    return filteredAndSortedPhotos.filter((photo: Photo) => selectedPhotos.has(photo.id))
   }, [filteredAndSortedPhotos, selectedPhotos])
 
   if (favoritePhotoObjects.length === 0) {
@@ -372,7 +372,7 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
             ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'
             : 'space-y-2'
         }>
-          {filteredAndSortedPhotos.map((photo) => (
+          {filteredAndSortedPhotos.map((photo: Photo) => (
             <PhotoCard
               key={photo.id}
               photo={photo}
@@ -406,7 +406,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   isSelectionMode,
   onToggleSelection,
   onToggleFavorite
-}) => {
+}: PhotoCardProps) => {
   if (viewMode === 'list') {
     return (
       <motion.div
