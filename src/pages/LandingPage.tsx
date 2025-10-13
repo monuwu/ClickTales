@@ -478,272 +478,342 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className={`relative py-24 ${
-        isDark 
-          ? 'bg-gradient-to-br from-slate-800 via-gray-900 to-slate-800' 
-          : 'bg-gradient-to-br from-white via-purple-50/30 to-rose-50/20'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+      {/* How It Works - 2025 Modern Design */}
+      <motion.section 
+        className={`relative flex flex-col items-center justify-center text-center px-6 py-20 ${
+          isDark 
+            ? 'bg-gradient-to-b from-black via-zinc-900 to-black' 
+            : 'bg-gradient-to-b from-slate-50 via-white to-slate-50'
+        } backdrop-blur-2xl`}
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        viewport={{ once: true }}
+      >
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <motion.h2 
-              className={`text-5xl md:text-6xl font-bold mb-6 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <span className="font-bold">How It</span> <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">Works</span>
-            </motion.h2>
-            <motion.p 
-              className={`text-xl max-w-3xl mx-auto ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <span className="font-semibold">Simple 4-step process to get started</span>
-            </motion.p>
-          </motion.div>
+            animate={{ 
+              rotate: [0, 360],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+            className={`absolute -top-40 -right-40 w-80 h-80 rounded-full ${
+              isDark ? 'bg-purple-500/10' : 'bg-purple-300/20'
+            } blur-3xl`}
+          />
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <div className="relative z-10 max-w-6xl mx-auto">
+          {/* Header */}
+          <motion.h2 
+            className={`text-4xl md:text-5xl font-semibold mb-6 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true }}
+          >
+            How It Works
+          </motion.h2>
+          
+          <motion.p 
+            className={`text-lg max-w-2xl mx-auto mb-16 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
+            Simple 4-step process to get started
+          </motion.p>
+
+          {/* Steps Grid */}
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.15
+                }
+              }
+            }}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
             {[
               {
-                number: "01",
+                step: "01",
                 title: "Access Camera",
-                description: "Click on Camera or Photo Booth to access the camera interface and start taking photos.",
-                icon: Settings,
-                image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&h=400&fit=crop&auto=format&q=80"
-              },
-              {
-                number: "02",
-                title: "Capture Photos",
-                description: "Take photos with built-in effects and filters using our intuitive camera interface.",
+                description: "Open ClickTales and access the camera interface with one click",
                 icon: Camera,
-                image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=600&h=400&fit=crop&auto=format&q=80"
+                gradient: "from-blue-500 to-cyan-500",
+                image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&h=200&fit=crop&auto=format&q=80"
               },
               {
-                number: "03",
-                title: "View Gallery",
-                description: "Browse all captured photos in the gallery with options to organize and manage your collection.",
+                step: "02", 
+                title: "Capture Photos",
+                description: "Take stunning photos with built-in filters and effects",
                 icon: Sparkles,
-                image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&h=400&fit=crop&auto=format&q=80"
+                gradient: "from-purple-500 to-pink-500",
+                image: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&h=200&fit=crop&auto=format&q=80"
               },
               {
-                number: "04",
-                title: "Share & Save",
-                description: "Download photos directly or share them with QR codes and direct links.",
+                step: "03",
+                title: "Organize Gallery", 
+                description: "Browse and manage all your photos in an intuitive gallery",
+                icon: Settings,
+                gradient: "from-emerald-500 to-teal-500",
+                image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&h=200&fit=crop&auto=format&q=80"
+              },
+              {
+                step: "04",
+                title: "Share & Export",
+                description: "Download or share photos instantly with QR codes and links",
                 icon: Share2,
-                image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop&auto=format&q=80"
+                gradient: "from-orange-500 to-red-500",
+                image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=200&fit=crop&auto=format&q=80"
               }
-            ].map((step, index) => (
+            ].map((item) => (
               <motion.div
-                key={step.number}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                viewport={{ once: true }}
-                className={`relative backdrop-blur-sm rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border ${
-                  isDark
-                    ? 'bg-gray-800/80 border-gray-700/50'
-                    : 'bg-white/80 border-white/50'
-                }`}
+                key={item.step}
+                variants={{
+                  hidden: { opacity: 0, y: 30 },
+                  show: { opacity: 1, y: 0 }
+                }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                className={`relative group rounded-3xl overflow-hidden ${
+                  isDark 
+                    ? 'bg-zinc-800/50 border-zinc-700/50' 
+                    : 'bg-white/60 border-gray-200/50'
+                } border backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300`}
               >
-                <div className="aspect-video overflow-hidden">
+                {/* Background Image Header */}
+                <div className="relative h-32 overflow-hidden">
                   <motion.img
-                    src={step.image}
-                    alt={step.title}
+                    src={item.image}
+                    alt={item.title}
                     className="w-full h-full object-cover"
                     whileHover={{ scale: 1.1 }}
                     transition={{ duration: 0.6 }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute top-4 left-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                      {step.number}
-                    </div>
+                  <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-80`}></div>
+                  
+                  {/* Step Number */}
+                  <motion.div 
+                    className="absolute top-4 left-4 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg border border-white/30"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {item.step}
+                  </motion.div>
+
+                  {/* Floating Icon */}
+                  <div className="absolute top-4 right-4 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg border border-white/30">
+                    <item.icon className="w-6 h-6 text-white" />
                   </div>
                 </div>
-                
-                <div className="p-8">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                      <step.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className={`text-xl font-bold ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {step.title}
-                    </h3>
-                  </div>
-                  <p className={`text-base leading-relaxed ${
-                    isDark ? 'text-gray-300' : 'text-gray-600'
+
+                {/* Content Section */}
+                <div className="p-6">
+                  <h3 className={`text-xl font-semibold mb-3 ${
+                    isDark ? 'text-white' : 'text-gray-900'
                   }`}>
-                    {step.description}
+                    {item.title}
+                  </h3>
+                  
+                  <p className={`text-sm leading-relaxed ${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {item.description}
                   </p>
+
+                  {/* Progress Indicator */}
+                  <div className="mt-4 flex items-center">
+                    <div className={`flex-1 h-1 bg-gradient-to-r ${item.gradient} rounded-full opacity-30`}></div>
+                    <span className={`ml-3 text-xs font-medium ${
+                      isDark ? 'text-gray-500' : 'text-gray-400'
+                    }`}>
+                      Step {item.step}
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Benefits/Why Choose Us Section */}
+      {/* Why Choose ClickTales - 2025 Modern Design */}
       <section 
         id="features"
         ref={featuresRef}
-        className={`relative py-24 ${
+        className={`relative py-32 overflow-hidden ${
           isDark 
-            ? 'bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900' 
-            : 'bg-gradient-to-br from-slate-50 via-white to-purple-50/20'
+            ? 'bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900' 
+            : 'bg-gradient-to-br from-white via-slate-50/50 to-purple-50/30'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        {/* Floating Orbs Background */}
+        <div className="absolute inset-0">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            animate={{ 
+              scale: [1, 1.2, 1],
+              rotate: [0, 180, 360],
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+            className={`absolute top-20 right-20 w-64 h-64 rounded-full ${
+              isDark ? 'bg-purple-500/10' : 'bg-purple-400/5'
+            } blur-3xl`}
+          />
+          <motion.div
+            animate={{ 
+              scale: [1.2, 1, 1.2],
+              rotate: [360, 180, 0],
+            }}
+            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+            className={`absolute bottom-20 left-20 w-80 h-80 rounded-full ${
+              isDark ? 'bg-pink-500/10' : 'bg-pink-400/5'
+            } blur-3xl`}
+          />
+        </div>
+
+        <div className="relative max-w-6xl mx-auto px-6">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-24"
           >
             <motion.h2 
-              className={`text-5xl md:text-6xl font-bold mb-6 ${
+              className={`text-6xl md:text-7xl font-light mb-6 ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <span className="font-bold">Why Choose</span> <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">ClickTales</span>
+              Why <span className="font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">ClickTales</span>
             </motion.h2>
+            <motion.div 
+              className="w-24 h-1 bg-gradient-to-r from-purple-600 to-pink-600 mx-auto mb-6 rounded-full"
+              initial={{ width: 0 }}
+              whileInView={{ width: 96 }}
+              transition={{ duration: 1, delay: 0.5 }}
+              viewport={{ once: true }}
+            />
             <motion.p 
-              className={`text-xl max-w-3xl mx-auto ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
+              className={`text-lg max-w-2xl mx-auto font-light ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
               }`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
               viewport={{ once: true }}
             >
-              <span className="font-semibold">Next-generation photo booth technology powered by AI and modern web standards</span>
+              Professional photo booth technology for modern events and photography
             </motion.p>
           </motion.div>
 
-          <div className="space-y-32">
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {[
               {
-                title: "AI-Powered Smart Features",
-                description: "Intelligent photo enhancement with AI filters, automatic background removal, and real-time object detection. Our smart algorithms ensure every shot is perfect with minimal effort.",
-                features: ["AI Enhancement", "Auto Background", "Smart Filters", "Object Detection"],
-                image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop&auto=format&q=80",
-                reversed: false
+                title: "Real-Time Camera Interface",
+                description: "Professional photo capture with live preview",
+                features: ["Live Camera Feed", "Instant Capture"],
+                icon: Camera,
+                gradient: "from-purple-500 to-blue-500"
               },
               {
-                title: "Advanced Gallery & Cloud Sync",
-                description: "Seamless multi-device synchronization with cloud storage, advanced search capabilities, and collaborative album sharing. Access your memories anywhere, anytime.",
-                features: ["Cloud Backup", "Multi-Device Sync", "Collaborative Albums", "Advanced Search"],
-                image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop&auto=format&q=80",
-                reversed: true
+                title: "Smart Gallery Management",
+                description: "Organize and browse photos with intuitive interface", 
+                features: ["Photo Organization", "Album Creation"],
+                icon: Settings,
+                gradient: "from-blue-500 to-cyan-500"
               },
               {
-                title: "Next-Gen Performance",
-                description: "Lightning-fast loading with modern web architecture, PWA capabilities, and offline functionality. Built for the future with cutting-edge technology stack.",
-                features: ["PWA Support", "Offline Mode", "Edge Computing", "WebAssembly"],
-                image: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=600&h=400&fit=crop&auto=format&q=80",
-                reversed: false
+                title: "Modern Web Architecture",
+                description: "Lightning-fast performance with React & TypeScript",
+                features: ["Fast Loading", "Responsive Design"],
+                icon: Sparkles,
+                gradient: "from-cyan-500 to-teal-500"
               },
               {
-                title: "Professional Studio Tools",
-                description: "Advanced editing suite with professional-grade filters, collage creation, PDF export, and batch processing. Transform your photos with studio-quality tools.",
-                features: ["Pro Editing", "Batch Processing", "PDF Export", "Collage Studio"],
-                image: "https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=600&h=400&fit=crop&auto=format&q=80",
-                reversed: true
+                title: "Seamless Photo Sharing",
+                description: "Instant download and sharing capabilities",
+                features: ["Direct Download", "QR Code Sharing"],
+                icon: Share2,
+                gradient: "from-teal-500 to-purple-500"
               }
-            ].map((benefit, index) => (
+            ].map((feature, index) => (
               <motion.div
-                key={benefit.title}
+                key={feature.title}
                 initial={{ opacity: 0, y: 60 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.2 }}
                 viewport={{ once: true }}
-                className={`flex flex-col ${benefit.reversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-16`}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="group"
               >
-                <div className="flex-1">
-                  <motion.div
-                    initial={{ opacity: 0, x: benefit.reversed ? 50 : -50 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.3 }}
-                    viewport={{ once: true }}
+                <div className={`relative p-8 rounded-3xl backdrop-blur-xl border transition-all duration-500 ${
+                  isDark 
+                    ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20' 
+                    : 'bg-white/70 border-white/50 hover:bg-white/90 hover:border-white/70'
+                } shadow-xl hover:shadow-2xl`}>
+                  {/* Icon */}
+                  <motion.div 
+                    className={`w-20 h-20 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 shadow-lg`}
+                    whileHover={{ rotate: 10, scale: 1.1 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <h3 className={`text-4xl font-bold mb-6 ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {benefit.title}
-                    </h3>
-                    <p className={`text-lg mb-8 leading-relaxed ${
-                      isDark ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      {benefit.description}
-                    </p>
-                    <div className="grid grid-cols-2 gap-4">
-                      {benefit.features.map((feature, featureIndex) => (
-                        <motion.div
-                          key={feature}
-                          initial={{ opacity: 0, y: 20 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.5, delay: 0.5 + featureIndex * 0.1 }}
-                          viewport={{ once: true }}
-                          className={`flex items-center space-x-3 p-4 rounded-2xl ${
-                            isDark 
-                              ? 'bg-gray-800/60 border-gray-700/30' 
-                              : 'bg-white/60 border-white/30'
-                          } border backdrop-blur-sm`}
-                        >
-                          <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-                          <span className={`font-medium ${
-                            isDark ? 'text-gray-200' : 'text-gray-700'
-                          }`}>
-                            {feature}
-                          </span>
-                        </motion.div>
-                      ))}
-                    </div>
+                    <feature.icon className="w-10 h-10 text-white" />
                   </motion.div>
-                </div>
-                
-                <div className="flex-1">
-                  <motion.div
-                    initial={{ opacity: 0, x: benefit.reversed ? -50 : 50 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.8, delay: 0.3 }}
-                    viewport={{ once: true }}
-                    className="relative"
-                  >
-                    <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                      <motion.img
-                        src={benefit.image}
-                        alt={benefit.title}
-                        className="w-full h-80 object-cover"
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.6 }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent"></div>
-                    </div>
-                    <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-xl">
-                      <span className="text-white font-bold text-2xl">✨</span>
-                    </div>
-                  </motion.div>
+
+                  {/* Content */}
+                  <h3 className={`text-2xl font-bold mb-3 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {feature.title}
+                  </h3>
+                  
+                  <p className={`text-lg mb-6 leading-relaxed ${
+                    isDark ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    {feature.description}
+                  </p>
+
+                  {/* Features */}
+                  <div className="flex flex-wrap gap-3">
+                    {feature.features.map((item, i) => (
+                      <motion.span
+                        key={item}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.8 + i * 0.1 }}
+                        viewport={{ once: true }}
+                        className={`px-4 py-2 rounded-full text-sm font-medium ${
+                          isDark 
+                            ? 'bg-gray-800/60 text-gray-200 border border-gray-700/50' 
+                            : 'bg-gray-100/80 text-gray-700 border border-gray-200/50'
+                        } backdrop-blur-sm`}
+                      >
+                        {item}
+                      </motion.span>
+                    ))}
+                  </div>
+
+                  {/* Hover Gradient Effect */}
+                  <div className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
                 </div>
               </motion.div>
             ))}
@@ -751,221 +821,325 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className={`relative py-24 ${
+      {/* What Our Users Say - 2025 Modern Design */}
+      <section className={`relative py-32 overflow-hidden ${
         isDark 
-          ? 'bg-gradient-to-br from-slate-800 via-gray-900 to-slate-800' 
-          : 'bg-gradient-to-br from-white via-purple-50/30 to-rose-50/20'
+          ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900' 
+          : 'bg-gradient-to-br from-slate-50 via-white to-purple-50/20'
       }`}>
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            animate={{ 
+              x: [0, 100, -50, 0],
+              y: [0, -50, 100, 0],
+              rotate: [0, 180, 360]
+            }}
+            transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+            className={`absolute top-1/4 left-1/4 w-96 h-96 rounded-full ${
+              isDark ? 'bg-purple-500/5' : 'bg-purple-400/3'
+            } blur-3xl`}
+          />
+        </div>
+
+        <div className="relative max-w-6xl mx-auto px-6">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
             className="text-center mb-20"
           >
             <motion.h2 
-              className={`text-5xl md:text-6xl font-bold mb-6 ${
+              className={`text-6xl md:text-7xl font-light mb-6 ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <span className="font-bold">What Our</span> <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-bold">Users</span> <span className="font-bold">Say</span>
+              What Our <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Users</span> Say
             </motion.h2>
-            <motion.p 
-              className={`text-xl max-w-3xl mx-auto ${
-                isDark ? 'text-gray-300' : 'text-gray-600'
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <span className="font-bold">Real feedback from our community</span>
-            </motion.p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Alex Thompson",
-                role: "Event Photographer",
-                company: "Photo Pro Studios",
-                rating: 5,
-                quote: "ClickTales has transformed how I approach event photography. The interface is intuitive and the gallery management features are exactly what I needed.",
-                image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%234F46E5'/%3E%3Ctext x='32' y='38' font-family='Arial, sans-serif' font-size='24' font-weight='bold' text-anchor='middle' fill='white'%3EAT%3C/text%3E%3C/svg%3E",
-                stats: "50+ Events"
-              },
-              {
-                name: "Maria Garcia",
-                role: "Wedding Coordinator",
-                company: "Dream Weddings",
-                rating: 5,
-                quote: "The photo booth feature is a hit at every wedding. Guests love the easy interface and instant sharing capabilities. Highly recommended!",
-                image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23EC4899'/%3E%3Ctext x='32' y='38' font-family='Arial, sans-serif' font-size='24' font-weight='bold' text-anchor='middle' fill='white'%3EMG%3C/text%3E%3C/svg%3E",
-                stats: "100+ Weddings"
-              },
-              {
-                name: "David Kim",
-                role: "Party Host",
-                company: "Birthday Celebration",
-                rating: 5,
-                quote: "Used this for my daughter's birthday party. The kids had a blast taking photos and the parents loved seeing all the memories captured so easily.",
-                image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2306B6D4'/%3E%3Ctext x='32' y='38' font-family='Arial, sans-serif' font-size='24' font-weight='bold' text-anchor='middle' fill='white'%3EDK%3C/text%3E%3C/svg%3E",
-                stats: "Family Events"
-              }
-            ].map((testimonial, index) => (
+          {/* Testimonials Bento Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Featured Testimonial */}
+            <motion.div
+              initial={{ opacity: 0, y: 60 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="lg:col-span-8"
+            >
               <motion.div
-                key={testimonial.name}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.2 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -10, transition: { duration: 0.3 } }}
-                className={`relative backdrop-blur-sm rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 border ${
-                  isDark
-                    ? 'bg-gray-800/80 border-gray-700/50'
-                    : 'bg-white/80 border-white/50'
-                }`}
+                whileHover={{ y: -8 }}
+                transition={{ duration: 0.4 }}
+                className={`relative p-10 rounded-3xl backdrop-blur-xl border ${
+                  isDark 
+                    ? 'bg-white/5 border-white/10' 
+                    : 'bg-white/70 border-white/50'
+                } shadow-2xl group`}
               >
-                <div className="flex items-start space-x-4 mb-6">
-                  <motion.img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-16 h-16 rounded-2xl object-cover shadow-lg"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                  <div className="flex-1">
-                    <h4 className={`font-bold text-lg ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {testimonial.name}
+                <div className="flex items-center mb-8">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mr-6 shadow-lg">
+                    AT
+                  </div>
+                  <div>
+                    <h4 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Alex Thompson
                     </h4>
-                    <p className="text-purple-600 font-medium">{testimonial.role}</p>
-                    <p className={`text-sm ${
-                      isDark ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      {testimonial.company}
-                    </p>
+                    <p className="text-purple-600 font-medium">Event Photographer</p>
+                  </div>
+                  <div className="ml-auto">
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className="text-yellow-400 text-2xl">★</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3, delay: 0.5 + i * 0.1 }}
-                      viewport={{ once: true }}
-                    >
-                      <span className="text-yellow-400 text-xl">★</span>
-                    </motion.div>
-                  ))}
-                </div>
-                
-                <blockquote className={`text-lg leading-relaxed mb-6 ${
+                <blockquote className={`text-xl leading-relaxed ${
                   isDark ? 'text-gray-300' : 'text-gray-700'
                 }`}>
-                  "{testimonial.quote}"
+                  "ClickTales transformed our event photography workflow with its professional interface that delivers stunning results instantly."
                 </blockquote>
-
-                <div className={`inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-sm`}>
-                  <span className="text-sm font-semibold text-white">
-                    {testimonial.stats}
+                
+                <div className="mt-6">
+                  <span className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white text-sm font-semibold shadow-lg">
+                    50+ Events
                   </span>
                 </div>
-
-                <div className="absolute top-6 right-6 text-6xl opacity-10">
-                  <span className={isDark ? 'text-white' : 'text-gray-900'}>❝</span>
-                </div>
               </motion.div>
-            ))}
+            </motion.div>
+
+            {/* Side Testimonials */}
+            <div className="lg:col-span-4 space-y-8">
+              {[
+                {
+                  name: "Maria G.",
+                  role: "Wedding Coordinator", 
+                  quote: "Perfect for weddings. Guests love the instant sharing!",
+                  gradient: "from-pink-500 to-rose-500",
+                  initials: "MG"
+                },
+                {
+                  name: "David K.",
+                  role: "Party Host",
+                  quote: "Kids had a blast. Super easy to use and great results.",
+                  gradient: "from-blue-500 to-cyan-500", 
+                  initials: "DK"
+                }
+              ].map((testimonial, index) => (
+                <motion.div
+                  key={testimonial.name}
+                  initial={{ opacity: 0, x: 60 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.8, delay: index * 0.2 }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -5 }}
+                  className={`relative p-6 rounded-2xl backdrop-blur-xl border ${
+                    isDark 
+                      ? 'bg-white/5 border-white/10' 
+                      : 'bg-white/70 border-white/50'
+                  } shadow-xl group`}
+                >
+                  <div className="flex items-center mb-4">
+                    <div className={`w-12 h-12 bg-gradient-to-r ${testimonial.gradient} rounded-xl flex items-center justify-center text-white font-bold mr-4 shadow-md`}>
+                      {testimonial.initials}
+                    </div>
+                    <div>
+                      <h5 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {testimonial.name}
+                      </h5>
+                      <p className="text-purple-600 text-sm font-medium">{testimonial.role}</p>
+                    </div>
+                  </div>
+                  
+                  <p className={`text-sm leading-relaxed ${
+                    isDark ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    "{testimonial.quote}"
+                  </p>
+
+                  <div className="flex mt-3">
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} className="text-yellow-400 text-sm">★</span>
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
 
 
-      {/* Interactive Demo Section */}
-      <section className="relative py-24 bg-gradient-to-br from-slate-50 via-purple-50/30 to-rose-50/20">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+      {/* See ClickTales in Action - 2025 Hero Design */}
+      <motion.section 
+        className={`relative py-24 overflow-hidden ${
+          isDark 
+            ? 'bg-gradient-to-b from-zinc-900 via-black to-zinc-900' 
+            : 'bg-gradient-to-b from-gray-50 via-white to-gray-50'
+        }`}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
           <motion.div
+            animate={{ 
+              scale: [1, 1.2, 1],
+              rotate: [0, 180, 360],
+              opacity: [0.1, 0.2, 0.1]
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+            className={`absolute top-1/4 right-1/4 w-96 h-96 rounded-full ${
+              isDark ? 'bg-purple-500/20' : 'bg-purple-300/30'
+            } blur-3xl`}
+          />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          {/* Header */}
+          <motion.div
+            className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
           >
-            <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${
-              isDark ? 'text-gray-100' : 'text-gray-900'
-            }`}>
-              See ClickTales in <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Action</span>
-            </h2>
-            <p className={`text-xl max-w-3xl mx-auto ${
-              isDark ? 'text-gray-300' : 'text-gray-600'
-            }`}>
-              Experience our intuitive interface before you start creating
-            </p>
+            <motion.h2 
+              className={`text-5xl md:text-6xl font-bold mb-6 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              See ClickTales in{' '}
+              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                Action
+              </span>
+            </motion.h2>
+            <motion.p 
+              className={`text-xl max-w-2xl mx-auto ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+            >
+              Experience the future of photo booth technology
+            </motion.p>
           </motion.div>
 
+          {/* Live Preview Frame */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
+            className="relative max-w-5xl mx-auto mb-16"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
             viewport={{ once: true }}
-            className="relative mx-auto max-w-5xl"
           >
-            <div className={`relative backdrop-blur-lg rounded-3xl p-8 shadow-2xl border ${
+            {/* Glowing Border Effect */}
+            <motion.div
+              className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-3xl blur opacity-30"
+              animate={{
+                opacity: [0.3, 0.6, 0.3],
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            
+            {/* Main Preview Container */}
+            <div className={`relative rounded-3xl overflow-hidden ${
               isDark 
-                ? 'bg-gray-800/60 border-gray-600/30' 
-                : 'bg-white/60 border-white/30'
-            }`}>
-              <div className="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 rounded-2xl aspect-video flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-black/20"></div>
-                
-                {/* Simplified floating elements */}
-                <motion.div
-                  animate={{ y: [-5, 5, -5] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-6 left-6 w-3 h-3 bg-white/20 rounded-full"
-                ></motion.div>
-                <motion.div
-                  animate={{ y: [5, -5, 5] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute bottom-8 right-8 w-3 h-3 bg-white/15 rounded-full"
-                ></motion.div>
+                ? 'bg-zinc-800/90 border-zinc-700/50' 
+                : 'bg-white/90 border-gray-200/50'
+            } border backdrop-blur-xl shadow-2xl`}>
+              {/* Top Bar */}
+              <div className={`flex items-center justify-between px-6 py-4 ${
+                isDark ? 'bg-zinc-700/50' : 'bg-gray-100/50'
+              } border-b border-gray-600/20`}>
+                <div className="flex space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+                <span className={`text-sm font-mono ${
+                  isDark ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  ClickTales Live Preview
+                </span>
+                <div></div>
+              </div>
 
+              {/* Preview Content */}
+              <div className="aspect-video bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-black/10"></div>
+                
+                {/* Floating Elements */}
                 <motion.div
+                  animate={{ 
+                    y: [0, -20, 0],
+                    opacity: [0.5, 1, 0.5]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute top-8 left-8 w-4 h-4 bg-white/30 rounded-full"
+                />
+                <motion.div
+                  animate={{ 
+                    y: [0, 15, 0],
+                    opacity: [0.3, 0.8, 0.3]
+                  }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  className="absolute bottom-8 right-12 w-3 h-3 bg-white/20 rounded-full"
+                />
+
+                {/* Central Content */}
+                <motion.div 
+                  className="text-center text-white relative z-10"
                   whileHover={{ scale: 1.02 }}
-                  className="relative z-10 text-white text-center"
+                  transition={{ duration: 0.3 }}
                 >
-                  <div className="mb-4">
-                    <Camera className="w-20 h-20 mx-auto opacity-90" />
-                  </div>
-                  <p className="text-2xl md:text-3xl font-bold mb-2">Live Camera Preview</p>
-                  <p className="text-lg opacity-75 mb-6">Professional photo booth experience in your browser</p>
-                  
                   <motion.div 
-                    className="flex items-center justify-center gap-6"
-                    initial={{ opacity: 0, y: 10 }}
+                    className="mb-6"
+                    animate={{ 
+                      rotate: [0, 5, -5, 0]
+                    }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <Camera className="w-24 h-24 mx-auto opacity-90" />
+                  </motion.div>
+                  <h3 className="text-3xl md:text-4xl font-bold mb-3">Live Camera Interface</h3>
+                  <p className="text-lg opacity-80 mb-8 max-w-md mx-auto">
+                    Professional photo booth experience with real-time filters and effects
+                  </p>
+                  
+                  {/* Action Buttons */}
+                  <motion.div 
+                    className="flex flex-col sm:flex-row items-center justify-center gap-4"
+                    initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.5 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
                     viewport={{ once: true }}
                   >
                     <Link to={user ? "/camera" : "/login"}>
                       <motion.button
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-6 rounded-xl border border-white/30 transition-all duration-300 flex items-center space-x-2"
+                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-semibold py-3 px-8 rounded-full border border-white/30 transition-all duration-300 flex items-center space-x-3 shadow-lg"
                       >
                         <Camera className="w-5 h-5" />
-                        <span>{user ? "Try Now" : "Sign In to Try"}</span>
+                        <span>{user ? "Launch Camera" : "Try Demo"}</span>
                       </motion.button>
                     </Link>
                     
@@ -973,272 +1147,159 @@ const LandingPage: React.FC = () => {
                       <motion.button
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="bg-white/90 hover:bg-white text-purple-600 font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center space-x-2"
+                        className="bg-white text-purple-600 font-semibold py-3 px-8 rounded-full transition-all duration-300 flex items-center space-x-3 shadow-lg hover:shadow-xl"
                       >
-                        <span>{user ? "View Gallery" : "Sign In for Gallery"}</span>
-                        <ArrowRight className="w-4 h-4" />
+                        <span>{user ? "View Gallery" : "Explore Gallery"}</span>
+                        <ArrowRight className="w-5 h-5" />
                       </motion.button>
                     </Link>
                   </motion.div>
                 </motion.div>
-                
-                {/* Animated border glow */}
-                <motion.div
-                  className="absolute inset-0 rounded-2xl border-2 border-white/20"
-                  animate={{
-                    boxShadow: [
-                      '0 0 20px rgba(255, 255, 255, 0.1)',
-                      '0 0 40px rgba(255, 255, 255, 0.2)',
-                      '0 0 20px rgba(255, 255, 255, 0.1)',
-                    ],
-                  }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                />
               </div>
-              
-              {/* Demo Features */}
-              <motion.div 
-                className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                viewport={{ once: true }}
-              >
-                {[
-                  { icon: Camera, text: "One-Click Capture", color: "from-purple-500 to-pink-500" },
-                  { icon: Sparkles, text: "Real-Time Filters", color: "from-blue-500 to-cyan-500" },
-                  { icon: ArrowRight, text: "Instant Download", color: "from-emerald-500 to-teal-500" }
-                ].map((feature, index) => (
-                  <motion.div
-                    key={feature.text}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
-                    viewport={{ once: true }}
-                    className={`flex items-center space-x-3 ${
-                      isDark ? 'text-gray-300' : 'text-gray-700'
-                    }`}
-                  >
-                    <div className={`p-2 rounded-lg bg-gradient-to-r ${feature.color}`}>
-                      <feature.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="font-medium">{feature.text}</span>
-                  </motion.div>
-                ))}
-              </motion.div>
             </div>
           </motion.div>
-        </div>
-      </section>
 
-
-
-      {/* CTA Section */}
-      <section className="relative py-24 bg-gradient-to-br from-purple-600 via-pink-600 to-violet-600 overflow-hidden">
-        {/* Enhanced Dynamic Background */}
-        <div className="absolute inset-0">
-          {/* Animated Gradient Orbs */}
-          <motion.div
-            className="absolute -top-20 -left-20 w-96 h-96 bg-gradient-to-r from-yellow-400/30 to-orange-500/30 rounded-full blur-3xl"
-            animate={{
-              x: [0, 100, 0],
-              y: [0, -50, 0],
-              scale: [1, 1.2, 1],
+          {/* Feature Highlights */}
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.2
+                }
+              }
             }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute -bottom-20 -right-20 w-80 h-80 bg-gradient-to-r from-cyan-400/30 to-blue-500/30 rounded-full blur-3xl"
-            animate={{
-              x: [0, -80, 0],
-              y: [0, 60, 0],
-              scale: [1, 0.8, 1],
-            }}
-            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          />
-          <motion.div
-            className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-pink-400/20 to-purple-500/20 rounded-full blur-2xl"
-            animate={{
-              x: [-50, 50, -50],
-              y: [-30, 30, -30],
-              scale: [0.8, 1.3, 0.8],
-            }}
-            transition={{ duration: 25, repeat: Infinity, ease: "easeInOut", delay: 5 }}
-          />
-
-          {/* Minimal Floating Geometric Shapes - Reduced to 2 */}
-          {[0, 1].map((i) => (
-            <motion.div
-              key={`cta-shape-${i}`}
-              className={`absolute w-4 h-4 bg-white/8 backdrop-blur-sm ${i === 0 ? 'rounded-full' : 'rounded-lg'}`}
-              style={{
-                left: `${30 + (i * 40)}%`,
-                top: `${25 + (i * 30)}%`,
-              }}
-              animate={{
-                y: [0, -20, 0],
-                rotate: [0, 180, 360],
-              }}
-              transition={{
-                duration: 20,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 5,
-              }}
-            />
-          ))}
-
-          {/* Minimal Sparkling Particles - Reduced to 3 */}
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={`cta-particle-${i}`}
-              className="absolute w-1 h-1 bg-white/30 rounded-full"
-              style={{
-                left: `${25 + i * 25}%`,
-                top: `${30 + i * 15}%`,
-              }}
-              animate={{
-                opacity: [0, 0.8, 0],
-                scale: [0, 1, 0],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeOut",
-                delay: i * 1,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="relative z-10 max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            initial="hidden"
+            whileInView="show"
             viewport={{ once: true }}
           >
-            {/* Enhanced Title with Glow Effect */}
+            {[
+              { icon: Camera, text: "Real-Time Capture", color: "from-purple-500 to-pink-500" },
+              { icon: Sparkles, text: "Live Filters & Effects", color: "from-blue-500 to-cyan-500" },
+              { icon: Share2, text: "Instant Sharing", color: "from-emerald-500 to-teal-500" }
+            ].map((feature) => (
+              <motion.div
+                key={feature.text}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0 }
+                }}
+                whileHover={{ y: -5 }}
+                className={`text-center p-6 rounded-2xl ${
+                  isDark 
+                    ? 'bg-zinc-800/50 border-zinc-700/50' 
+                    : 'bg-white/50 border-gray-200/50'
+                } border backdrop-blur-sm transition-all duration-300`}
+              >
+                <div className={`w-16 h-16 mx-auto mb-4 bg-gradient-to-r ${feature.color} rounded-2xl flex items-center justify-center shadow-lg`}>
+                  <feature.icon className="w-8 h-8 text-white" />
+                </div>
+                <h4 className={`text-lg font-semibold ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {feature.text}
+                </h4>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.section>
+
+
+
+      {/* Ready to Get Started - 2025 Modern CTA */}
+      <section className={`relative py-32 overflow-hidden ${
+        isDark 
+          ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-black' 
+          : 'bg-gradient-to-br from-slate-100 via-white to-purple-50'
+      }`}>
+        {/* Minimal Background Elements */}
+        <div className="absolute inset-0">
+          <motion.div
+            animate={{ 
+              rotate: [0, 360],
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
+            className={`absolute top-1/4 right-1/4 w-96 h-96 rounded-full ${
+              isDark ? 'bg-purple-600/5' : 'bg-purple-300/10'
+            } blur-3xl`}
+          />
+        </div>
+
+        <div className="relative max-w-4xl mx-auto px-6 text-center">
+          {/* Modern Minimal Heading */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
             <motion.h2 
-              className="text-4xl md:text-5xl font-bold text-white mb-6 relative"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              className={`text-7xl md:text-8xl font-light mb-8 ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <span className="relative z-10 drop-shadow-2xl font-bold">Ready to Get Started?</span>
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-yellow-400/30 to-pink-400/30 blur-2xl"
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.3, 0.6, 0.3],
-                }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              />
+              Ready to <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Start</span>
             </motion.h2>
 
             <motion.p 
-              className="text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              className={`text-xl font-light mb-16 max-w-2xl mx-auto ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
               viewport={{ once: true }}
             >
-              Join photographers and event organizers who trust ClickTales for their photo booth needs
+              Join the next generation of photo experiences
             </motion.p>
             
-            {/* Enhanced Buttons with Spectacular Effects */}
+            {/* Modern Button Design */}
             <motion.div 
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-              initial={{ opacity: 0, y: 20 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-6"
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
               viewport={{ once: true }}
             >
               <Link to={user ? "/photobooth" : "/login"}>
                 <motion.button
-                  whileHover={{ scale: 1.05, y: -5 }}
+                  whileHover={{ y: -8 }}
                   whileTap={{ scale: 0.98 }}
-                  className="relative group bg-white text-purple-600 font-bold py-4 px-8 rounded-2xl shadow-2xl hover:shadow-white/25 transition-all duration-500 flex items-center space-x-3 overflow-hidden"
+                  className={`relative px-12 py-4 rounded-2xl font-medium transition-all duration-300 ${
+                    isDark
+                      ? 'bg-white text-gray-900 hover:bg-gray-100'
+                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                  }`}
                 >
-                  {/* Button Background Effects */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-pink-400/20"
-                    initial={{ x: '-100%' }}
-                    whileHover={{ x: '100%' }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                  />
-                  
-                  {/* Sparkle Effects */}
-                  {[...Array(5)].map((_, i) => (
-                    <motion.div
-                      key={`cta-sparkle-${i}`}
-                      className="absolute w-1 h-1 bg-yellow-400 rounded-full"
-                      style={{
-                        left: `${20 + i * 15}%`,
-                        top: `${20 + i * 15}%`,
-                      }}
-                      animate={{
-                        opacity: [0, 1, 0],
-                        scale: [0, 1, 0],
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        delay: i * 0.2,
-                        ease: "easeInOut",
-                      }}
-                    />
-                  ))}
-
-                  <Camera className="w-5 h-5 relative z-10" />
-                  <span className="relative z-10">{user ? "Start Taking Photos" : "Sign In to Start"}</span>
-
-                  {/* Border Glow */}
-                  <motion.div
-                    className="absolute inset-0 rounded-2xl border-2 border-yellow-400/50"
-                    animate={{
-                      boxShadow: [
-                        '0 0 20px rgba(250, 204, 21, 0.3)',
-                        '0 0 40px rgba(250, 204, 21, 0.6)',
-                        '0 0 20px rgba(250, 204, 21, 0.3)',
-                      ],
-                    }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  />
+                  <span className="flex items-center space-x-3">
+                    <Camera className="w-5 h-5" />
+                    <span>{user ? "Start Creating" : "Get Started"}</span>
+                  </span>
                 </motion.button>
               </Link>
               
               <Link to="/gallery">
                 <motion.button
-                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.98 }}
-                  className="relative group text-white font-semibold py-4 px-8 border-2 border-white/30 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-all duration-500 overflow-hidden"
+                  className={`relative px-12 py-4 rounded-2xl font-medium border transition-all duration-300 ${
+                    isDark
+                      ? 'border-gray-700 text-gray-300 hover:border-gray-600 hover:text-white'
+                      : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:text-gray-900'
+                  }`}
                 >
-                  {/* Shimmer Effect */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    initial={{ x: '-100%', skewX: -45 }}
-                    whileHover={{ x: '100%' }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                  />
-                  
-                  <span className="relative z-10">View Gallery</span>
-
-                  {/* Animated Border */}
-                  <motion.div
-                    className="absolute inset-0 rounded-2xl"
-                    animate={{
-                      borderColor: [
-                        'rgba(255, 255, 255, 0.3)',
-                        'rgba(255, 255, 255, 0.6)',
-                        'rgba(255, 255, 255, 0.3)',
-                      ],
-                    }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    style={{ border: '2px solid' }}
-                  />
+                  <span className="flex items-center space-x-3">
+                    <span>Explore Gallery</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
                 </motion.button>
               </Link>
             </motion.div>

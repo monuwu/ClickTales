@@ -18,6 +18,7 @@ const Login: React.FC = () => {
   const [otpStep, setOtpStep] = useState<'idle' | 'sending' | 'sent' | 'verifying'>('idle')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,6 +47,13 @@ const Login: React.FC = () => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
     if (error) setError('')
+  }
+
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true)
+    setLoginMode('otp')
+    setOtpStep('idle')
+    setError('')
   }
 
   const validateForm = () => {
@@ -211,6 +219,8 @@ const Login: React.FC = () => {
     setIsLogin(!isLogin)
     setError('')
     setOtpStep('idle')
+    setLoginMode('password')
+    setShowForgotPassword(false)
     setFormData({
       name: '',
       email: '',
@@ -295,12 +305,29 @@ const Login: React.FC = () => {
           {/* Glassmorphism Container */}
           <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-6 sm:p-8">
             {/* Toggle Tabs */}
-            <div className="flex bg-white/10 rounded-2xl p-1 mb-8">
+            <div className="relative flex bg-white/10 rounded-2xl p-1 mb-8">
+              {/* Animated Background */}
+              <motion.div
+                className="absolute top-1 bottom-1 bg-white rounded-xl shadow-lg"
+                animate={{
+                  left: isLogin ? '4px' : '50%',
+                  width: '50%',
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                }}
+                style={{
+                  transform: isLogin ? 'translateX(0)' : 'translateX(-4px)',
+                }}
+              />
+              
               <button
                 onClick={() => setIsLogin(true)}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
+                className={`relative z-10 flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
                   isLogin
-                    ? 'bg-white text-purple-600 shadow-lg'
+                    ? 'text-purple-600'
                     : 'text-white/80 hover:text-white'
                 }`}
               >
@@ -308,9 +335,9 @@ const Login: React.FC = () => {
               </button>
               <button
                 onClick={() => setIsLogin(false)}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
+                className={`relative z-10 flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
                   !isLogin
-                    ? 'bg-white text-purple-600 shadow-lg'
+                    ? 'text-purple-600'
                     : 'text-white/80 hover:text-white'
                 }`}
               >
@@ -320,7 +347,24 @@ const Login: React.FC = () => {
 
             {/* Login Mode Toggle (Sign In Only) */}
             {isLogin && (
-              <div className="flex bg-white/5 rounded-xl p-1 mb-6">
+              <div className="relative flex bg-white/5 rounded-xl p-1 mb-6">
+                {/* Animated Background */}
+                <motion.div
+                  className="absolute top-1 bottom-1 bg-white/20 rounded-lg shadow-sm"
+                  animate={{
+                    left: loginMode === 'password' ? '4px' : '50%',
+                    width: '50%',
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 25,
+                  }}
+                  style={{
+                    transform: loginMode === 'password' ? 'translateX(0)' : 'translateX(-4px)',
+                  }}
+                />
+                
                 <button
                   onClick={() => {
                     setLoginMode('password')
@@ -328,9 +372,9 @@ const Login: React.FC = () => {
                     setError('')
                     setFormData(prev => ({ ...prev, otpCode: '' }))
                   }}
-                  className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+                  className={`relative z-10 flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
                     loginMode === 'password'
-                      ? 'bg-white/20 text-white shadow-sm'
+                      ? 'text-white'
                       : 'text-white/60 hover:text-white/80'
                   }`}
                 >
@@ -343,9 +387,9 @@ const Login: React.FC = () => {
                     setError('')
                     setFormData(prev => ({ ...prev, password: '', otpCode: '' }))
                   }}
-                  className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
+                  className={`relative z-10 flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-all duration-300 ${
                     loginMode === 'otp'
-                      ? 'bg-white/20 text-white shadow-sm'
+                      ? 'text-white'
                       : 'text-white/60 hover:text-white/80'
                   }`}
                 >
@@ -408,7 +452,7 @@ const Login: React.FC = () => {
                         placeholder="Full Name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        className="w-full pl-12 pr-4 py-3 bg-transparent border border-white/30 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all duration-300"
                         required={!isLogin}
                       />
                     </div>
@@ -423,47 +467,103 @@ const Login: React.FC = () => {
                       placeholder="Email Address"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                      className="w-full pl-12 pr-4 py-3 bg-transparent border border-white/30 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all duration-300"
                       required
                     />
                   </div>
 
                   {/* OTP Code Field (OTP mode only) */}
-                  {isLogin && loginMode === 'otp' && otpStep !== 'idle' && (
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
-                      <input
-                        type="text"
-                        name="otpCode"
-                        placeholder="Enter OTP Code"
-                        value={formData.otpCode}
-                        onChange={handleInputChange}
-                        className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                        required
-                      />
+                  {isLogin && ((loginMode === 'otp' && otpStep !== 'idle') || (showForgotPassword && otpStep !== 'idle')) && (
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                        <input
+                          type="text"
+                          name="otpCode"
+                          placeholder="Enter OTP Code"
+                          value={formData.otpCode}
+                          onChange={handleInputChange}
+                          className="w-full pl-12 pr-4 py-3 bg-transparent border border-white/30 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all duration-300"
+                          required
+                        />
+                      </div>
+                      
+                      {/* Verify OTP Button for Forgot Password */}
+                      {showForgotPassword && otpStep === 'sent' && (
+                        <motion.button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={isLoading || !formData.otpCode.trim()}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isLoading ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Verifying...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-5 h-5" />
+                              <span>Verify OTP</span>
+                            </>
+                          )}
+                        </motion.button>
+                      )}
                     </div>
                   )}
 
                   {/* Password Field (Login password mode or Register) */}
                   {(isLogin && loginMode === 'password') || !isLogin ? (
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        name="password"
-                        placeholder={isLogin ? "Password" : "Password"}
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/50" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          name="password"
+                          placeholder={isLogin ? "Password" : "Password"}
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          className="w-full pl-12 pr-12 py-3 bg-transparent border border-white/30 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all duration-300"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      
+                      {/* Call OTP Button - Show when forgot password is clicked */}
+                      {isLogin && showForgotPassword && (
+                        <motion.button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={isLoading || !formData.email.trim()}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {otpStep === 'sending' ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Sending OTP...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-5 h-5" />
+                              <span>Call OTP</span>
+                            </>
+                          )}
+                        </motion.button>
+                      )}
                     </div>
                   ) : null}
 
@@ -477,7 +577,7 @@ const Login: React.FC = () => {
                         placeholder="Confirm Password"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        className="w-full pl-12 pr-12 py-3 bg-transparent border border-white/30 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all duration-300"
                         required={!isLogin}
                       />
                       <button
@@ -559,8 +659,8 @@ const Login: React.FC = () => {
                 </div>
               )}
 
-              {/* Submit Button (Password mode or Register) */}
-              {(!isLogin || loginMode === 'password') && (
+              {/* Submit Button (Password mode or Register, but not in forgot password mode) */}
+              {(!isLogin || (loginMode === 'password' && !showForgotPassword)) && (
                 <motion.button
                   type="submit"
                   disabled={isLoading}
@@ -582,13 +682,47 @@ const Login: React.FC = () => {
 
             {/* Additional Links */}
             <div className="mt-6 text-center space-y-4">
-              {isLogin && (
-                <Link
-                  to="/forgot-password"
+              {isLogin && !showForgotPassword && (
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
                   className="text-white/70 hover:text-white transition-colors text-sm"
                 >
                   Forgot your password?
-                </Link>
+                </button>
+              )}
+              
+              {isLogin && showForgotPassword && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false)
+                    setLoginMode('password')
+                    setOtpStep('idle')
+                    setError('')
+                  }}
+                  className="text-white/70 hover:text-white transition-colors text-sm"
+                >
+                  Back to password login
+                </button>
+              )}
+
+              {/* Login Method Toggle */}
+              {isLogin && !showForgotPassword && (
+                <div className="text-white/50 text-sm">
+                  Want to login with OTP? 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginMode(loginMode === 'password' ? 'otp' : 'password')
+                      setOtpStep('idle')
+                      setError('')
+                    }}
+                    className="text-blue-300 hover:text-blue-200 font-semibold transition-colors ml-1"
+                  >
+                    {loginMode === 'password' ? 'Click here' : 'Back to password'}
+                  </button>
+                </div>
               )}
 
               <div className="text-white/50 text-sm">

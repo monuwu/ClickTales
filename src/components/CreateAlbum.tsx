@@ -143,11 +143,11 @@ const CreateAlbum: React.FC<CreateAlbumProps> = ({ isOpen, onClose, onSuccess })
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
                 <AlbumIcon className="w-6 h-6 text-white" />
@@ -175,7 +175,7 @@ const CreateAlbum: React.FC<CreateAlbumProps> = ({ isOpen, onClose, onSuccess })
           </div>
 
           {/* Progress indicator */}
-          <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex-shrink-0">
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full transition-colors ${
                 step === 'photos' ? 'bg-purple-500' : 'bg-green-500'
@@ -202,7 +202,7 @@ const CreateAlbum: React.FC<CreateAlbumProps> = ({ isOpen, onClose, onSuccess })
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {step === 'photos' ? (
               <div className="p-6">
                 {/* Selection controls */}
@@ -321,8 +321,8 @@ const CreateAlbum: React.FC<CreateAlbumProps> = ({ isOpen, onClose, onSuccess })
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+          {/* Footer - Always visible */}
+          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
             <div className="flex items-center gap-2">
               {step === 'details' && (
                 <motion.button
@@ -354,7 +354,7 @@ const CreateAlbum: React.FC<CreateAlbumProps> = ({ isOpen, onClose, onSuccess })
                   whileTap={{ scale: 0.95 }}
                   onClick={handleNextStep}
                   disabled={selectedPhotos.size === 0 || isLoading}
-                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   Next: Album Details
                 </motion.button>
