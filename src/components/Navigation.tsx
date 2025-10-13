@@ -17,6 +17,15 @@ const Navigation: React.FC = () => {
   const { user, logout } = useAuth()
   const isAuthenticated = !!user
 
+  // Debug user info
+  React.useEffect(() => {
+    if (user) {
+      console.log('🧭 Navigation: User data received:', { id: user.id, name: user.name, email: user.email })
+    } else {
+      console.log('🧭 Navigation: No user data')
+    }
+  }, [user])
+
   const navItems = [
     { name: 'Home', path: '/', public: true },
     { name: 'Features', path: '/#features', public: true },

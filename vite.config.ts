@@ -65,25 +65,35 @@ export default defineConfig({
     port: 5173, // Set default port
     strictPort: false, // Allow port switching if busy
     proxy: {
-      '/send-otp': {
+      '/api/send-otp': {
         target: 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
-      '/register': {
+      '/api/register': {
         target: 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
-      '/login': {
+      '/api/login': {
         target: 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
-      '/webauthn': {
+      '/api/webauthn': {
         target: 'http://127.0.0.1:4000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/api/verify-otp': {
+        target: 'http://127.0.0.1:4000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   },

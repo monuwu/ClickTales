@@ -86,7 +86,7 @@ export const storeOTP = (email: string, code: string, expiresInMinutes: number =
 }
 
 export const verifyOTP = (email: string, code: string) => {
-  const stmt = db.prepare('SELECT * FROM otp_codes WHERE email = ? AND code = ? AND expires_at > datetime("now") ORDER BY created_at DESC LIMIT 1')
+  const stmt = db.prepare("SELECT * FROM otp_codes WHERE email = ? AND code = ? AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1")
   const row = stmt.get(email, code) as { id: number } | undefined
   if (row) {
     // Delete used OTP

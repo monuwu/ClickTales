@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePhotos } from '../contexts/PhotoContext'
-import { Heart } from '../components/icons'
 import {
   GalleryHeader,
   PhotoGrid,
@@ -9,8 +8,7 @@ import {
 } from '../components'
 import {
   Heart as HeartIcon,
-  Download,
-  Loader
+  Download
 } from '../components/icons'
 import AlbumGrid from '../components/AlbumGrid'
 import AlbumViewer from '../components/AlbumViewer'
@@ -86,7 +84,7 @@ const Gallery: React.FC = () => {
 
     try {
       // Create download links for selected photos
-      selectedPhotoObjects.forEach((photo, index) => {
+      selectedPhotoObjects.forEach((photo) => {
         const link = document.createElement('a')
         link.href = photo.url
         link.download = photo.filename

@@ -57,6 +57,8 @@ interface PhotoContextType {
 
   // Utility functions
   refreshData: () => Promise<void>
+  clearAllLocalStorage: () => void
+  removeAlbumByName: (albumName: string) => void
 }
 
 const PhotoContext = createContext<PhotoContextType | undefined>(undefined)
@@ -243,7 +245,13 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       addNotification({
         type: 'info',
         title: 'Photo Captured',
-        message: 'Login to save permanently'
+        message: 'Login to save permanently',
+        action: {
+          label: 'Login',
+          onClick: () => {
+            window.location.href = '/login'
+          }
+        }
       })
       return photoId
     }
@@ -872,6 +880,63 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       .filter((photo): photo is Photo => photo !== undefined)
   }, [albums, photos])
 
+  // Utility function to clear all localStorage data
+  const clearAllLocalStorage = useCallback(() => {
+    const keysToRemove = [
+      'guestAlbums',
+      'guestFavorites', 
+      'guestPhotosMeta',
+      'favorite-albums',
+      'clicktales_photos',
+      'clicktales_albums',
+      'clicktales_favorites'
+    ]
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+    })
+    
+    // Reset state
+    setAlbums([])
+    setPhotos([])
+    setFavoritePhotos([])
+    
+    addNotification({
+      type: 'success',
+      title: 'Storage Cleared',
+      message: 'All local albums and data have been cleared.'
+    })
+    
+    console.log('🧹 Cleared all localStorage data and reset state')
+  }, [addNotification])
+
+  // Function to remove specific album by name
+  const removeAlbumByName = useCallback((albumName: string) => {
+    // Remove from current state
+    setAlbums(prev => {
+      const filtered = prev.filter(album => album.title !== albumName)
+      console.log(`Removed album "${albumName}" from state. Remaining albums:`, filtered.map(a => a.title))
+      return filtered
+    })
+    
+    // Remove from localStorage
+    try {
+      const existingGuestAlbums = JSON.parse(localStorage.getItem('guestAlbums') || '[]')
+      const updatedAlbums = existingGuestAlbums.filter((album: any) => album.title !== albumName)
+      localStorage.setItem('guestAlbums', JSON.stringify(updatedAlbums))
+      
+      addNotification({
+        type: 'success',
+        title: 'Album Removed',
+        message: `Album "${albumName}" has been removed.`
+      })
+      
+      console.log(`🗑️ Removed album "${albumName}" from localStorage`)
+    } catch (storageError) {
+      console.warn('Could not update albums in localStorage:', storageError)
+    }
+  }, [addNotification])
+
   const contextValue: PhotoContextType = {
     photos,
     favoritePhotos,
@@ -890,7 +955,9 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addPhotoToAlbum,
     removePhotoFromAlbum,
     getAlbumPhotos,
-    refreshData
+    refreshData,
+    clearAllLocalStorage,
+    removeAlbumByName
   }
 
   return (

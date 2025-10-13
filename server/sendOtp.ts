@@ -62,7 +62,7 @@ function checkRateLimit(email: string): boolean {
 }
 
 import bcrypt from 'bcrypt'
-import db, { getUserByEmail, createUser, storeOTP } from './db'
+import db, { getUserByEmail, createUser, storeOTP, verifyOTP } from './db'
 
 interface User {
   id: number
@@ -180,6 +180,36 @@ app.post('/send-otp', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('OTP send error:', err);
     res.status(500).json({ success: false, error: 'Failed to send OTP email' });
+  }
+});
+
+app.post('/verify-otp', async (req: Request, res: Response) => {
+  console.log('Received POST /verify-otp with body:', req.body);
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    console.log('Missing email or code');
+    return res.status(400).json({ success: false, error: 'Email and OTP code are required' });
+  }
+
+  if (!isValidEmail(email)) {
+    console.log('Email validation failed for:', email);
+    return res.status(400).json({ success: false, error: 'Invalid email format' });
+  }
+
+  try {
+    const isValid = verifyOTP(email, code);
+    
+    if (isValid) {
+      console.log(`OTP verification successful for ${email}`);
+      res.json({ success: true });
+    } else {
+      console.log(`OTP verification failed for ${email} - invalid or expired code`);
+      res.status(400).json({ success: false, error: 'Invalid or expired OTP code' });
+    }
+  } catch (err) {
+    console.error('OTP verification error:', err);
+    res.status(500).json({ success: false, error: 'Failed to verify OTP' });
   }
 });
 

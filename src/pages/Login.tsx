@@ -169,23 +169,39 @@ const Login: React.FC = () => {
       } else {
         // Simplified registration - direct signup without OTP
         console.log('🔄 Starting simplified registration')
-        await sendSignupOTP(formData.name.trim(), formData.email.trim(), formData.password)
+        try {
+          await sendSignupOTP(formData.name.trim(), formData.email.trim(), formData.password)
 
-        // Auto-login after successful registration
-        const loginSuccess = await login(formData.email.trim(), formData.password)
-        if (loginSuccess) {
-          console.log('✅ Registration and auto-login successful')
-          navigate('/photobooth', { replace: true })
-        } else {
-          console.log('✅ Registration successful, please login')
-          setIsLogin(true)
-          setError('')
-          setFormData({ ...formData, password: '', confirmPassword: '' })
+          // Auto-login after successful registration
+          const loginSuccess = await login(formData.email.trim(), formData.password)
+          if (loginSuccess) {
+            console.log('✅ Registration and auto-login successful')
+            navigate('/photobooth', { replace: true })
+          } else {
+            console.log('✅ Registration successful, please login')
+            setIsLogin(true)
+            setError('')
+            setFormData({ ...formData, password: '', confirmPassword: '' })
+          }
+        } catch (signupError: any) {
+          // If user already exists, automatically switch to login mode
+          if (signupError.message === 'User already exists') {
+            console.log('🔄 User exists, switching to login mode')
+            setIsLogin(true) // Switch to login mode
+            setOtpStep('idle')
+            setError('Account exists! Switched to login mode. Use your password or request an OTP below.')
+            // Keep the email filled in
+            setFormData(prev => ({ ...prev, password: '', confirmPassword: '', name: '' }))
+            return
+          }
+          throw signupError
         }
       }
     } catch (error: any) {
       console.error('Login error:', error)
-      setError(error.message || 'An error occurred')
+      if (error.message !== 'User already exists') {
+        setError(error.message || 'An error occurred')
+      }
     } finally {
       setIsLoading(false)
     }

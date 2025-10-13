@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { usePhoto } from '../contexts/PhotoContext'
+import { usePhotos, type Photo } from '../contexts/PhotoContext'
 import { useNotifications } from '../contexts/NotificationContext'
 import { BulkDownloadButton } from './BulkDownloadModal'
 import { 
@@ -14,7 +14,6 @@ import {
   Download,
   X
 } from './icons'
-import type { Photo } from '../contexts/PhotoContext'
 
 interface FavoritesGalleryProps {
   className?: string
@@ -32,12 +31,12 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
   const [isSelectionMode, setIsSelectionMode] = useState(false)
 
-  const { photos, favoritePhotos, toggleFavoritePhoto, deletePhoto } = usePhoto()
+  const { photos, favoritePhotos, toggleFavoritePhoto, deletePhoto } = usePhotos()
   const { addNotification } = useNotifications()
 
   // Get favorite photos
   const favoritePhotoObjects = useMemo(() => {
-    return photos.filter(photo => favoritePhotos.includes(photo.id))
+    return photos.filter((photo: Photo) => favoritePhotos.includes(photo.id))
   }, [photos, favoritePhotos])
 
   // Apply search, filter, and sort
@@ -46,7 +45,7 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
 
     // Apply search
     if (searchQuery) {
-      filtered = filtered.filter(photo => 
+      filtered = filtered.filter((photo: Photo) => 
         photo.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
         photo.metadata?.size?.toString().includes(searchQuery)
       )
@@ -60,19 +59,19 @@ export const FavoritesGallery: React.FC<FavoritesGalleryProps> = ({ className = 
 
     switch (filterBy) {
       case 'today':
-        filtered = filtered.filter(photo => photo.timestamp >= today)
+        filtered = filtered.filter((photo: Photo) => photo.timestamp >= today)
         break
       case 'week':
-        filtered = filtered.filter(photo => photo.timestamp >= weekAgo)
+        filtered = filtered.filter((photo: Photo) => photo.timestamp >= weekAgo)
         break
       case 'month':
-        filtered = filtered.filter(photo => photo.timestamp >= monthAgo)
+        filtered = filtered.filter((photo: Photo) => photo.timestamp >= monthAgo)
         break
       case 'collages':
-        filtered = filtered.filter(photo => photo.isCollage)
+        filtered = filtered.filter((photo: Photo) => photo.isCollage)
         break
       case 'photos':
-        filtered = filtered.filter(photo => !photo.isCollage)
+        filtered = filtered.filter((photo: Photo) => !photo.isCollage)
         break
       default:
         // 'all' - no additional filtering

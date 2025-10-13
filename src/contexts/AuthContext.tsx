@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import type { Session } from '@supabase/supabase-js'
-import { generateOTP, storeOTP, verifyOTP } from '../utils/otpGenerator'
-import { sendOTP } from '../services/emailService'
+import { generateOTP } from '../utils/otpGenerator'
 import { mockAuth, isSupabaseAvailable } from '../services/mockAuth'
 
 interface User {
@@ -37,7 +36,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [otpCodes, setOtpCodes] = useState<{ [email: string]: { code: string; name: string } }>({})
 
   useEffect(() => {
     let cleanup: (() => void) | undefined
@@ -253,6 +251,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
 
         if (error) {
+          // If user already exists, automatically send OTP for login instead
+          if (error.message === 'User already exists') {
+            console.log('🔄 User exists, switching to OTP login flow')
+            await sendOtp(email.toLowerCase().trim())
+            return // Don't throw error, just send OTP
+          }
           console.error('Mock auth signup error:', error.message)
           throw error
         }
@@ -276,23 +280,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendOtp = async (email: string): Promise<void> => {
     try {
-      // Generate 6-digit OTP code
+      // Always use SQLite3 via Express backend for OTP
       const otpCode = generateOTP()
 
-      // Send OTP via email service
-      const success = await sendOTP({
-        to_email: email.toLowerCase().trim(),
-        otp_code: otpCode
+      // Send OTP via Express backend (which stores in SQLite3)
+      const response = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase().trim(),
+          otpCode: otpCode
+        })
       })
 
-      if (!success) {
-        throw new Error('Failed to send OTP email')
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send OTP')
       }
 
-      // Store OTP code for verification with name
-      const name = email.split('@')[0] // Use email prefix as name
-      setOtpCodes(prev => ({ ...prev, [email.toLowerCase().trim()]: { code: otpCode, name } }))
-      console.log(`✅ OTP sent to ${email} with code: ${otpCode}`)
+      console.log(`✅ SQLite3 OTP sent to ${email} via Express backend`)
     } catch (error) {
       console.error('Send OTP error:', error)
       throw error
@@ -301,56 +310,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyLoginOtp = async (email: string, token: string): Promise<boolean> => {
     try {
-      // Determine which auth service to use
-      const available = await isSupabaseAvailable()
-
-      if (available && supabase) {
-        const { data, error } = await supabase.auth.verifyOtp({
+      // Always use SQLite3 via Express backend for OTP verification
+      const response = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: email.toLowerCase().trim(),
-          token: token.trim(),
-          type: 'email'
+          code: token.trim()
         })
+      })
 
-        if (error) {
-          console.error('Supabase verify OTP error:', error.message)
-          return false
-        }
+      const data = await response.json()
 
-        if (data.user && data.session) {
-          setSession(data.session)
-          setUser({
-            id: data.user.id,
-            email: data.user.email || '',
-            name: data.user.user_metadata?.name || data.user.user_metadata?.full_name
-          })
-          console.log('✅ Supabase: OTP verification successful')
-          return true
-        }
-      } else {
-        // Mock auth - verify against stored OTP code
-        const storedData = otpCodes[email.toLowerCase().trim()]
-        if (storedData && storedData.code === token) {
-          // Clear the used OTP code
-          setOtpCodes(prev => {
-            const newCodes = { ...prev }
-            delete newCodes[email.toLowerCase().trim()]
-            return newCodes
-          })
-          setUser({
-            id: 'mock-user-id',
-            email: email.toLowerCase().trim(),
-            name: storedData.name
-          })
-          setSession({ user: { id: 'mock-user-id', email: email.toLowerCase().trim() } } as Session)
-          console.log('✅ Mock Auth: OTP verification successful')
-          return true
-        } else {
-          console.error('Mock auth verify OTP error: Invalid OTP')
-          return false
-        }
+      if (!response.ok || !data.success) {
+        console.error('SQLite3 verify OTP error:', data.error)
+        return false
       }
 
-      return false
+      // After successful OTP verification, create session for main app functionality
+      const available = await isSupabaseAvailable()
+      if (available && supabase) {
+        try {
+          // Use anonymous sign-in for Supabase session after OTP verification
+          const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously({
+            options: {
+              data: {
+                email: email.toLowerCase().trim(),
+                name: email.split('@')[0],
+                auth_method: 'otp_sqlite3'
+              }
+            }
+          })
+
+          if (anonError) {
+            console.error('Supabase anonymous sign-in error:', anonError.message)
+            // Fall back to mock session
+            setUser({
+              id: `otp-user-${Date.now()}`,
+              email: email.toLowerCase().trim(),
+              name: email.split('@')[0]
+            })
+            setSession({ user: { id: `otp-user-${Date.now()}`, email: email.toLowerCase().trim() } } as Session)
+          } else if (anonData.user && anonData.session) {
+            setSession(anonData.session)
+            const userName = email.split('@')[0]
+            setUser({
+              id: anonData.user.id,
+              email: email.toLowerCase().trim(), // Use the OTP-verified email
+              name: userName
+            })
+            console.log('✅ Supabase anonymous session created for OTP user')
+            console.log('👤 User set with name:', userName, 'and email:', email.toLowerCase().trim())
+          }
+        } catch (error) {
+          console.error('Supabase session creation error:', error)
+          // Fall back to mock session
+          const userName = email.split('@')[0]
+          setUser({
+            id: `otp-user-${Date.now()}`,
+            email: email.toLowerCase().trim(),
+            name: userName
+          })
+          setSession({ user: { id: `otp-user-${Date.now()}`, email: email.toLowerCase().trim() } } as Session)
+          console.log('👤 Fallback user set with name:', userName, 'and email:', email.toLowerCase().trim())
+        }
+      } else {
+        // Fallback session for when Supabase is unavailable
+        const userName = email.split('@')[0]
+        setUser({
+          id: `otp-user-${Date.now()}`,
+          email: email.toLowerCase().trim(),
+          name: userName
+        })
+        setSession({ user: { id: `otp-user-${Date.now()}`, email: email.toLowerCase().trim() } } as Session)
+        console.log('👤 Mock user set with name:', userName, 'and email:', email.toLowerCase().trim())
+      }
+
+      console.log('✅ SQLite3: OTP verification successful')
+      return true
     } catch (error) {
       console.error('Verify OTP error:', error)
       return false
