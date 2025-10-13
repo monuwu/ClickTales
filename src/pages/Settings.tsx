@@ -1,7 +1,6 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { User, ArrowLeft, Save } from '../components/icons'
+import { User } from '../components/icons'
 import Navigation from '../components/Navigation'
 import { useAuth } from '../contexts/AuthContext'
 
