@@ -636,32 +636,39 @@ const LandingPage: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.4 }}
               viewport={{ once: true }}
             >
-              <span className="font-semibold">Modern photo booth technology for memorable experiences</span>
+              <span className="font-semibold">Next-generation photo booth technology powered by AI and modern web standards</span>
             </motion.p>
           </motion.div>
 
           <div className="space-y-32">
             {[
               {
-                title: "User-Friendly Interface",
-                description: "Clean, intuitive design makes it easy for anyone to take professional-quality photos. Simple navigation and clear buttons ensure a smooth experience for all users.",
-                features: ["Responsive Design", "Touch Friendly", "Dark/Light Mode", "Easy Navigation"],
-                image: "https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=600&h=400&fit=crop&auto=format&q=80",
+                title: "AI-Powered Smart Features",
+                description: "Intelligent photo enhancement with AI filters, automatic background removal, and real-time object detection. Our smart algorithms ensure every shot is perfect with minimal effort.",
+                features: ["AI Enhancement", "Auto Background", "Smart Filters", "Object Detection"],
+                image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=400&fit=crop&auto=format&q=80",
                 reversed: false
               },
               {
-                title: "Gallery Management",
-                description: "Organize and manage your photo collections with smart categorization. Browse, search, and organize photos with an elegant gallery interface.",
-                features: ["Photo Organization", "Smart Search", "Album Creation", "Easy Browsing"],
-                image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop&auto=format&q=80",
+                title: "Advanced Gallery & Cloud Sync",
+                description: "Seamless multi-device synchronization with cloud storage, advanced search capabilities, and collaborative album sharing. Access your memories anywhere, anytime.",
+                features: ["Cloud Backup", "Multi-Device Sync", "Collaborative Albums", "Advanced Search"],
+                image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop&auto=format&q=80",
                 reversed: true
               },
               {
-                title: "Modern Technology",
-                description: "Built with the latest web technologies for reliability and performance. Responsive design works seamlessly on all devices and screen sizes.",
-                features: ["React & TypeScript", "Real-time Updates", "Cross-platform", "Modern UI"],
-                image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&h=400&fit=crop&auto=format&q=80",
+                title: "Next-Gen Performance",
+                description: "Lightning-fast loading with modern web architecture, PWA capabilities, and offline functionality. Built for the future with cutting-edge technology stack.",
+                features: ["PWA Support", "Offline Mode", "Edge Computing", "WebAssembly"],
+                image: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=600&h=400&fit=crop&auto=format&q=80",
                 reversed: false
+              },
+              {
+                title: "Professional Studio Tools",
+                description: "Advanced editing suite with professional-grade filters, collage creation, PDF export, and batch processing. Transform your photos with studio-quality tools.",
+                features: ["Pro Editing", "Batch Processing", "PDF Export", "Collage Studio"],
+                image: "https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=600&h=400&fit=crop&auto=format&q=80",
+                reversed: true
               }
             ].map((benefit, index) => (
               <motion.div
