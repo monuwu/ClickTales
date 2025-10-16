@@ -7,6 +7,25 @@ import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfil
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split large vendor libraries
+          'html2canvas': ['html2canvas'],
+          'tensorflow': ['@tensorflow/tfjs', '@tensorflow/tfjs-backend-webgl', '@tensorflow-models/body-segmentation'],
+          'supabase': ['@supabase/supabase-js'],
+          'framer-motion': ['framer-motion'],
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'pdf-vendor': ['jspdf', 'html2pdf.js'],
+          'chart-vendor': ['chart.js', 'react-chartjs-2'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000, // Increase warning limit
+    target: 'esnext', // Use modern JS for smaller bundles
+    minify: 'terser' // Better compression
+  },
   resolve: {
     alias: {
       // This Rollup aliases are extracted from @esbuild-plugins/node-modules-polyfill, see https://github.com/remorses/esbuild-plugins/blob/master/node-modules-polyfill/src/index.ts
