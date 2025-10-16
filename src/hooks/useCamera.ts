@@ -77,7 +77,9 @@ export const useCamera = (settings: CameraSettings) => {
       canvas.width = settings.width
       canvas.height = settings.height
       
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height)
+      // Flip the image horizontally to match the preview
+      ctx.scale(-1, 1)
+      ctx.drawImage(videoRef.current, -canvas.width, 0, canvas.width, canvas.height)
       
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
 

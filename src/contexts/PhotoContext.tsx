@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useNotifications } from './NotificationContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../services/supabase'
@@ -81,11 +81,34 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { addNotification } = useNotifications()
   const { user } = useAuth()
 
-  // Load data from Supabase when user is authenticated, or guest data when not
+  // Load data from Supabase when user is authenticated, or local data when not
   const loadData = useCallback(async () => {
     if (!user) {
-      // Load guest data from localStorage
-      setPhotos([]) // Guest photos are session-only (in memory) to avoid quota issues
+      // Load local photos from localStorage
+      try {
+        const stored = localStorage.getItem('clicktales_photos')
+        let localPhotos: any[] = []
+        
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            localPhotos = Array.isArray(parsed) ? parsed : []
+          } catch (parseError) {
+            console.warn('Invalid localStorage photo data, resetting:', parseError)
+            localPhotos = []
+            localStorage.setItem('clicktales_photos', '[]')
+          }
+        }
+        
+        const formattedPhotos: Photo[] = localPhotos.map((photo: any) => ({
+          ...photo,
+          timestamp: new Date(photo.timestamp)
+        }))
+        setPhotos(formattedPhotos)
+      } catch (error) {
+        console.warn('Error loading local photos:', error)
+        setPhotos([])
+      }
       
       // Load guest albums metadata
       try {
@@ -191,15 +214,10 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Error loading data:', error)
       const message = error instanceof Error ? error.message : 'Failed to load data'
       setError(message)
-      addNotification({
-        type: 'error',
-        title: 'Failed to load data',
-        message
-      })
     } finally {
       setIsLoading(false)
     }
-  }, [user, addNotification])
+  }, [user])
 
   // Load data when user changes
   useEffect(() => {
@@ -224,157 +242,278 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         timestamp: new Date()
       }
       
-      // Store in memory only for guest users to avoid localStorage quota issues
-      setPhotos(prev => [guestPhoto, ...prev])
-      
-      // Don't store large image data in localStorage to avoid quota exceeded errors
-      // Instead, just store metadata for session persistence
+      // Save to localStorage for persistence
       try {
-        const existingGuestMeta = JSON.parse(localStorage.getItem('guestPhotosMeta') || '[]')
-        const photoMeta = {
-          id: photoId,
-          filename: photoData.filename,
-          timestamp: new Date(),
-          isCollage: photoData.isCollage || false
-        }
-        localStorage.setItem('guestPhotosMeta', JSON.stringify([photoMeta, ...existingGuestMeta]))
-      } catch (storageError) {
-        console.warn('Could not save photo metadata to localStorage:', storageError)
-      }
-      
-      addNotification({
-        type: 'info',
-        title: 'Photo Captured',
-        message: 'Login to save permanently',
-        action: {
-          label: 'Login',
-          onClick: () => {
-            window.location.href = '/login'
+        const stored = localStorage.getItem('clicktales_photos')
+        let localPhotos: Photo[] = []
+        
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            localPhotos = Array.isArray(parsed) ? parsed : []
+          } catch (parseError) {
+            console.warn('Invalid localStorage data, resetting:', parseError)
+            localPhotos = []
           }
         }
-      })
+        
+        localPhotos.unshift(guestPhoto)
+        localStorage.setItem('clicktales_photos', JSON.stringify(localPhotos))
+        console.log('ðŸ“± Guest photo saved to local storage')
+      } catch (storageError) {
+        console.warn('Failed to save guest photo to localStorage:', storageError)
+      }
+      
+      setPhotos(prev => [guestPhoto, ...prev])
+      
       return photoId
     }
 
     try {
       let uploadPath: string
+      let useLocalStorage = false
       
-      // If it's a data URL (from canvas/camera), convert to file and upload
+      // If it's a data URL (from canvas/camera), try to upload to Supabase first
       if (photoData.url.startsWith('data:')) {
-        // Convert data URL to blob
-        const response = await fetch(photoData.url)
-        const blob = await response.blob()
-        
-        // Generate unique filename
-        const fileExtension = blob.type.split('/')[1] || 'jpg'
-        const fileName = `${user.id}/${Date.now()}-${photoData.filename || 'photo'}.${fileExtension}`
-        
-        // Upload to Supabase Storage
-        if (!supabase) throw new Error('Supabase not available')
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('photos')
-          .upload(fileName, blob, {
-            cacheControl: '3600',
-            upsert: false
-          })
-
-        if (uploadError) throw uploadError
-        
-        // Get public URL
-        if (!supabase) throw new Error('Supabase not available')
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('photos')
-          .getPublicUrl(uploadData.path)
+        try {
+          // Convert data URL to blob without fetch to avoid CSP issues
+          const base64Data = photoData.url.split(',')[1]
+          const mimeType = photoData.url.match(/data:([^;]+)/)?.[1] || 'image/jpeg'
+          const byteCharacters = atob(base64Data)
+          const byteNumbers = new Array(byteCharacters.length)
           
-        uploadPath = publicUrl
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i)
+          }
+          
+          const byteArray = new Uint8Array(byteNumbers)
+          const blob = new Blob([byteArray], { type: mimeType })
+          
+          // Generate unique filename
+          const fileExtension = blob.type.split('/')[1] || 'jpg'
+          const fileName = `${user.id}/${Date.now()}-${photoData.filename || 'photo'}.${fileExtension}`
+          
+          // Try to upload to Supabase Storage
+          if (supabase) {
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('photos')
+              .upload(fileName, blob, {
+                cacheControl: '3600',
+                upsert: false
+              })
+
+            if (uploadError) {
+              console.warn('Supabase upload failed, using local storage:', uploadError.message)
+              useLocalStorage = true
+              uploadPath = photoData.url // Keep the original data URL
+            } else {
+              // Get public URL
+              const { data: { publicUrl } } = supabase.storage
+                .from('photos')
+                .getPublicUrl(uploadData.path)
+              uploadPath = publicUrl
+            }
+          } else {
+            useLocalStorage = true
+            uploadPath = photoData.url
+          }
+        } catch (uploadError) {
+          console.warn('Upload process failed, using local storage:', uploadError)
+          useLocalStorage = true
+          uploadPath = photoData.url
+        }
       } else {
         // Use provided URL (for external images)
         uploadPath = photoData.url
       }
 
-      // Save photo metadata to database
-      if (!supabase) throw new Error('Supabase not available')
-      
-      const { data, error } = await supabase
-        .from('photos')
-        .insert({
-          user_id: user.id,
-          filename: photoData.filename,
+      let photoId: string
+      let newPhoto: Photo
+
+      // Try to save to Supabase database if not using local storage
+      if (!useLocalStorage && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('photos')
+            .insert({
+              user_id: user.id,
+              filename: photoData.filename,
+              url: uploadPath,
+              thumbnail_url: photoData.thumbnail || uploadPath,
+              metadata: photoData.metadata || {},
+              is_collage: photoData.isCollage || false
+            })
+            .select()
+            .single()
+
+          if (error) {
+            console.warn('Supabase database save failed, using local storage:', error.message)
+            useLocalStorage = true
+          } else {
+            photoId = data.id
+            newPhoto = {
+              id: data.id,
+              url: uploadPath,
+              thumbnail: photoData.thumbnail || uploadPath,
+              filename: photoData.filename,
+              timestamp: new Date(data.created_at),
+              isCollage: photoData.isCollage,
+              metadata: photoData.metadata
+            }
+          }
+        } catch (dbError) {
+          console.warn('Database operation failed, using local storage:', dbError)
+          useLocalStorage = true
+        }
+      }
+
+      // Fallback to local storage
+      if (useLocalStorage) {
+        photoId = `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        newPhoto = {
+          id: photoId,
           url: uploadPath,
-          thumbnail_url: photoData.thumbnail || uploadPath,
-          metadata: photoData.metadata || {},
-          is_collage: photoData.isCollage || false
-        })
-        .select()
-        .single()
+          thumbnail: photoData.thumbnail || uploadPath,
+          filename: photoData.filename,
+          timestamp: new Date(),
+          isCollage: photoData.isCollage,
+          metadata: photoData.metadata
+        }
 
-      if (error) throw error
+        // Save to localStorage for persistence
+        try {
+          const stored = localStorage.getItem('clicktales_photos')
+          let localPhotos: Photo[] = []
+          
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored)
+              localPhotos = Array.isArray(parsed) ? parsed : []
+            } catch (parseError) {
+              console.warn('Invalid localStorage data, resetting:', parseError)
+              localPhotos = []
+            }
+          }
+          
+          localPhotos.unshift(newPhoto)
+          localStorage.setItem('clicktales_photos', JSON.stringify(localPhotos))
+          console.log('ðŸ“± Photo saved to local storage')
+        } catch (storageError) {
+          console.warn('Failed to save to localStorage:', storageError)
+        }
+      }
 
-      const newPhoto: Photo = {
-        id: data.id,
-        url: uploadPath,
-        thumbnail: photoData.thumbnail || uploadPath,
+      setPhotos(prev => [newPhoto!, ...prev])
+      
+      return photoId!
+    } catch (error) {
+      console.error('Error adding photo:', error)
+      
+      // Even if everything fails, try to save locally
+      const fallbackId = `fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const fallbackPhoto: Photo = {
+        id: fallbackId,
+        url: photoData.url,
+        thumbnail: photoData.thumbnail || photoData.url,
         filename: photoData.filename,
-        timestamp: new Date(data.created_at),
+        timestamp: new Date(),
         isCollage: photoData.isCollage,
         metadata: photoData.metadata
       }
 
-      setPhotos(prev => [newPhoto, ...prev])
+      setPhotos(prev => [fallbackPhoto, ...prev])
       
-      addNotification({
-        type: 'success',
-        title: 'Photo added',
-        message: 'Photo has been added to your gallery!'
-      })
+      // Save to localStorage
+      try {
+        const stored = localStorage.getItem('clicktales_photos')
+        let localPhotos: Photo[] = []
+        
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            localPhotos = Array.isArray(parsed) ? parsed : []
+          } catch (parseError) {
+            console.warn('Invalid localStorage data, resetting:', parseError)
+            localPhotos = []
+          }
+        }
+        
+        localPhotos.unshift(fallbackPhoto)
+        localStorage.setItem('clicktales_photos', JSON.stringify(localPhotos))
+        console.log('ðŸ“± Photo saved to local storage as fallback')
+      } catch (storageError) {
+        console.warn('Failed to save to localStorage:', storageError)
+      }
       
-      return data.id
-    } catch (error) {
-      console.error('Error adding photo:', error)
-      const message = error instanceof Error ? error.message : 'Failed to add photo'
-      addNotification({
-        type: 'error',
-        title: 'Failed to add photo',
-        message
-      })
-      throw error
+      return fallbackId
     }
-  }, [user, addNotification])
+  }, [user])
 
   const deletePhoto = useCallback(async (photoId: string): Promise<void> => {
-    // Allow guest users to delete photos from local storage
+    // Handle local storage deletion
     if (!user) {
       console.warn('Guest mode: Deleting photo from local storage')
       
       // Remove from photos array
       setPhotos(prev => prev.filter(p => p.id !== photoId))
       
-      // Remove from local storage metadata (not full images to avoid quota issues)
+      // Remove from local storage
       try {
-        const existingGuestMeta = JSON.parse(localStorage.getItem('guestPhotosMeta') || '[]')
-        const updatedMeta = existingGuestMeta.filter((meta: any) => meta.id !== photoId)
-        localStorage.setItem('guestPhotosMeta', JSON.stringify(updatedMeta))
+        const stored = localStorage.getItem('clicktales_photos')
+        let localPhotos: Photo[] = []
+        
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            localPhotos = Array.isArray(parsed) ? parsed : []
+          } catch (parseError) {
+            console.warn('Invalid localStorage data, resetting:', parseError)
+            localPhotos = []
+          }
+        }
+        
+        const updatedPhotos = localPhotos.filter((photo: any) => photo.id !== photoId)
+        localStorage.setItem('clicktales_photos', JSON.stringify(updatedPhotos))
       } catch (storageError) {
-        console.warn('Could not update localStorage metadata:', storageError)
+        console.warn('Could not update localStorage:', storageError)
       }
       
       // Remove from favorites if it was favorited
       setFavoritePhotos(prev => prev.filter(id => id !== photoId))
+      console.log('ðŸ“± Photo deleted from local storage')
+      return
+    }
+
+    // Check if it's a local photo (doesn't need Supabase deletion)
+    const isLocalPhoto = photoId.startsWith('local-') || photoId.startsWith('guest-') || photoId.startsWith('fallback-')
+    
+    if (isLocalPhoto) {
+      // For local photos, just remove from state and localStorage
+      setPhotos(prev => prev.filter(p => p.id !== photoId))
+      setFavoritePhotos(prev => prev.filter(id => id !== photoId))
+      
+      // Remove from localStorage
       try {
-        const existingGuestFavorites = JSON.parse(localStorage.getItem('guestFavorites') || '[]')
-        const updatedFavorites = existingGuestFavorites.filter((id: string) => id !== photoId)
-        localStorage.setItem('guestFavorites', JSON.stringify(updatedFavorites))
+        const stored = localStorage.getItem('clicktales_photos')
+        let localPhotos: Photo[] = []
+        
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            localPhotos = Array.isArray(parsed) ? parsed : []
+          } catch (parseError) {
+            console.warn('Invalid localStorage data, resetting:', parseError)
+            localPhotos = []
+          }
+        }
+        
+        const updatedPhotos = localPhotos.filter((photo: any) => photo.id !== photoId)
+        localStorage.setItem('clicktales_photos', JSON.stringify(updatedPhotos))
+        console.log('ðŸ“± Local photo deleted')
       } catch (storageError) {
-        console.warn('Could not update favorites in localStorage:', storageError)
+        console.warn('Could not update localStorage:', storageError)
       }
       
-      addNotification({
-        type: 'success',
-        title: 'Photo Deleted',
-        message: 'Photo removed from session'
-      })
       return
     }
 
@@ -415,22 +554,13 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         photoIds: album.photoIds.filter(pId => pId !== photoId)
       })))
 
-      addNotification({
-        type: 'success',
-        title: 'Photo deleted',
-        message: 'Photo has been removed from your gallery.'
-      })
+      console.log('âœ… Photo deleted from Supabase')
     } catch (error) {
       console.error('Error deleting photo:', error)
-      const message = error instanceof Error ? error.message : 'Failed to delete photo'
-      addNotification({
-        type: 'error',
-        title: 'Failed to delete photo',
-        message
-      })
-      throw error
+      // Don't throw error for delete operations to prevent UI crashes
+      console.warn('Delete operation failed, but continuing...')
     }
-  }, [photos, user, addNotification])
+  }, [photos, user])
 
   const clearAllPhotos = useCallback(async (): Promise<void> => {
     if (!user) throw new Error('User not authenticated')
@@ -476,11 +606,10 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       })
     } catch (error) {
       console.error('Error clearing photos:', error)
-      const message = error instanceof Error ? error.message : 'Failed to clear gallery'
       addNotification({
         type: 'error',
         title: 'Failed to clear gallery',
-        message
+        message: error instanceof Error ? error.message : 'Failed to clear gallery'
       })
       throw error
     }
@@ -516,9 +645,9 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       
       addNotification({
-        type: 'info',
-        title: 'Favorite Updated',
-        message: 'Login to sync favorites permanently'
+        type: "info",
+        title: "Favorite Updated", 
+        message: "Login to sync favorites permanently"
       })
       return
     }
@@ -552,11 +681,10 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (error) {
       console.error('Error toggling favorite:', error)
-      const message = error instanceof Error ? error.message : 'Failed to update favorites'
       addNotification({
-        type: 'error',
-        title: 'Failed to update favorites',
-        message
+        type: "error", 
+        title: "Operation failed",
+        message: error instanceof Error ? error.message : "Operation failed"
       })
       throw error
     }
@@ -607,11 +735,10 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       
       addNotification({
-        type: 'success',
-        title: 'Album Created',
-        message: 'Login to save permanently'
+        type: "info",
+        title: "Favorite Updated", 
+        message: "Login to sync favorites permanently"
       })
-      
       return albumId
     }
 
@@ -661,23 +788,22 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setAlbums(prev => [newAlbum, ...prev])
 
       addNotification({
-        type: 'success',
-        title: 'Album created',
-        message: `Album "${title}" has been created successfully!`
+        type: "info",
+        title: "Favorite Updated", 
+        message: "Login to sync favorites permanently"
       })
-
       return albumData.id
     } catch (error) {
       console.error('Error creating album:', error)
-      const message = error instanceof Error ? error.message : 'Failed to create album'
+      // Removed unused message variable
       addNotification({
-        type: 'error',
-        title: 'Failed to create album',
-        message
+        type: "error", 
+        title: "Operation failed",
+        message: error instanceof Error ? error.message : "Operation failed"
       })
       throw error
     }
-  }, [user, photos, addNotification])
+  }, [user, photos])
 
   const deleteAlbum = useCallback(async (albumId: string): Promise<void> => {
     // Allow guest users to delete albums from local storage
@@ -697,9 +823,9 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       
       addNotification({
-        type: 'success',
-        title: 'Album Deleted',
-        message: 'Album removed from session'
+        type: "info",
+        title: "Favorite Updated", 
+        message: "Login to sync favorites permanently"
       })
       return
     }
@@ -717,22 +843,18 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setAlbums(prev => prev.filter(album => album.id !== albumId))
 
-      addNotification({
-        type: 'success',
-        title: 'Album deleted',
-        message: 'Album has been deleted successfully.'
-      })
+      // Toast notification removed
     } catch (error) {
       console.error('Error deleting album:', error)
-      const message = error instanceof Error ? error.message : 'Failed to delete album'
+      // Removed unused message variable
       addNotification({
-        type: 'error',
-        title: 'Failed to delete album',
-        message
+        type: "error", 
+        title: "Operation failed",
+        message: error instanceof Error ? error.message : "Operation failed"
       })
       throw error
     }
-  }, [user, addNotification])
+  }, [user])
 
   const updateAlbum = useCallback(async (albumId: string, updates: Partial<Album>): Promise<void> => {
     if (!user) throw new Error('User not authenticated')
@@ -758,22 +880,18 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           : album
       ))
 
-      addNotification({
-        type: 'success',
-        title: 'Album updated',
-        message: 'Album has been updated successfully.'
-      })
+      // Toast notification removed
     } catch (error) {
       console.error('Error updating album:', error)
-      const message = error instanceof Error ? error.message : 'Failed to update album'
+      // Removed unused message variable
       addNotification({
-        type: 'error',
-        title: 'Failed to update album',
-        message
+        type: "error", 
+        title: "Operation failed",
+        message: error instanceof Error ? error.message : "Operation failed"
       })
       throw error
     }
-  }, [user, addNotification])
+  }, [user])
 
   const addPhotoToAlbum = useCallback(async (photoId: string, albumId: string): Promise<void> => {
     if (!user) throw new Error('User not authenticated')
@@ -812,22 +930,18 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           : album
       ))
 
-      addNotification({
-        type: 'success',
-        title: 'Photo added',
-        message: 'Photo has been added to the album.'
-      })
+      // Toast notification removed
     } catch (error) {
       console.error('Error adding photo to album:', error)
-      const message = error instanceof Error ? error.message : 'Failed to add photo to album'
+      // Removed unused message variable
       addNotification({
-        type: 'error',
-        title: 'Failed to add photo',
-        message
+        type: "error", 
+        title: "Operation failed",
+        message: error instanceof Error ? error.message : "Operation failed"
       })
       throw error
     }
-  }, [user, addNotification])
+  }, [user])
 
   const removePhotoFromAlbum = useCallback(async (photoId: string, albumId: string): Promise<void> => {
     if (!user) throw new Error('User not authenticated')
@@ -854,22 +968,18 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           : album
       ))
 
-      addNotification({
-        type: 'success',
-        title: 'Photo removed',
-        message: 'Photo has been removed from the album.'
-      })
+      // Toast notification removed
     } catch (error) {
       console.error('Error removing photo from album:', error)
-      const message = error instanceof Error ? error.message : 'Failed to remove photo from album'
+      // Removed unused message variable
       addNotification({
-        type: 'error',
-        title: 'Failed to remove photo',
-        message
+        type: "error", 
+        title: "Operation failed",
+        message: error instanceof Error ? error.message : "Operation failed"
       })
       throw error
     }
-  }, [user, addNotification])
+  }, [user])
 
   const getAlbumPhotos = useCallback((albumId: string): Photo[] => {
     const album = albums.find(a => a.id === albumId)
@@ -902,13 +1012,13 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setFavoritePhotos([])
     
     addNotification({
-      type: 'success',
-      title: 'Storage Cleared',
-      message: 'All local albums and data have been cleared.'
-    })
-    
-    console.log('🧹 Cleared all localStorage data and reset state')
-  }, [addNotification])
+        type: "success",
+        title: "Data Cleared",
+        message: "All local data has been cleared."
+      })
+      
+      console.log('🧹 Cleared all localStorage data and reset state')
+  }, [])
 
   // Function to remove specific album by name
   const removeAlbumByName = useCallback((albumName: string) => {
@@ -926,16 +1036,16 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       localStorage.setItem('guestAlbums', JSON.stringify(updatedAlbums))
       
       addNotification({
-        type: 'success',
-        title: 'Album Removed',
+        type: "success",
+        title: "Album Removed",
         message: `Album "${albumName}" has been removed.`
       })
       
-      console.log(`🗑️ Removed album "${albumName}" from localStorage`)
+      console.log(`ðŸ—‘ï¸ Removed album "${albumName}" from localStorage`)
     } catch (storageError) {
       console.warn('Could not update albums in localStorage:', storageError)
     }
-  }, [addNotification])
+  }, [])
 
   const contextValue: PhotoContextType = {
     photos,
@@ -966,3 +1076,5 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </PhotoContext.Provider>
   )
 }
+
+

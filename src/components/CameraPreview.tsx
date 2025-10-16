@@ -36,6 +36,7 @@ const CameraPreview: React.FC<CameraPreviewProps> = ({ settings, onCapture }) =>
           playsInline
           muted
           className="w-full h-full object-cover"
+          style={{ transform: 'scaleX(-1)' }}
         />
         {error && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center">

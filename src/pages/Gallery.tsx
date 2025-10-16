@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation } from 'react-router-dom'
 import { usePhotos } from '../contexts/PhotoContext'
 import {
   GalleryHeader,
@@ -18,8 +19,12 @@ import type { Photo, Album } from '../contexts/PhotoContext'
 type GalleryTab = 'photos' | 'favorites' | 'collage' | 'albums'
 
 const Gallery: React.FC = () => {
+  const location = useLocation()
   const { photos, addPhoto, deletePhoto, favoritePhotos, toggleFavoritePhoto, albums } = usePhotos()
-  const [activeTab, setActiveTab] = useState<GalleryTab>('photos')
+  
+  // Check for routing state to set initial tab
+  const initialTab = (location.state as { activeTab?: GalleryTab })?.activeTab || 'photos'
+  const [activeTab, setActiveTab] = useState<GalleryTab>(initialTab)
 
   // Handle photo selection for various operations
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set())
@@ -29,6 +34,14 @@ const Gallery: React.FC = () => {
   // Album-specific state
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
   const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false)
+
+  // Handle location state changes
+  useEffect(() => {
+    const routingState = location.state as { activeTab?: GalleryTab }
+    if (routingState?.activeTab) {
+      setActiveTab(routingState.activeTab)
+    }
+  }, [location.state])
 
   // Filter photos based on favorites toggle
   const displayedPhotos = useMemo(() => {
