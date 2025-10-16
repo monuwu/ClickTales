@@ -17,7 +17,7 @@ export default defineConfig({
           'supabase': ['@supabase/supabase-js'],
           'framer-motion': ['framer-motion'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'pdf-vendor': ['jspdf', 'html2pdf.js'],
+          'pdf-vendor': ['jspdf'],
         }
       }
     },
