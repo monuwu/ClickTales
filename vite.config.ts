@@ -11,9 +11,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Split large vendor libraries that are actually installed
+          // Split large vendor libraries that are actually working
           'html2canvas': ['html2canvas'],
-          'tensorflow': ['@tensorflow/tfjs', '@tensorflow/tfjs-backend-webgl', '@tensorflow-models/body-segmentation'],
           'supabase': ['@supabase/supabase-js'],
           'framer-motion': ['framer-motion'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
