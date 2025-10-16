@@ -11,14 +11,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Split large vendor libraries
+          // Split large vendor libraries that are actually installed
           'html2canvas': ['html2canvas'],
           'tensorflow': ['@tensorflow/tfjs', '@tensorflow/tfjs-backend-webgl', '@tensorflow-models/body-segmentation'],
           'supabase': ['@supabase/supabase-js'],
           'framer-motion': ['framer-motion'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'pdf-vendor': ['jspdf', 'html2pdf.js'],
-          'chart-vendor': ['chart.js', 'react-chartjs-2'],
         }
       }
     },
