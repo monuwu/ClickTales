@@ -116,7 +116,15 @@ const Login: React.FC = () => {
       console.log('✅ OTP sent successfully')
     } catch (error: any) {
       console.error('Send OTP error:', error)
-      setError(error.message || 'Failed to send OTP')
+      const errorMessage = error.message || 'Failed to send OTP'
+      
+      // Add helpful development message if backend server is not running
+      if (errorMessage.includes('Backend server is not running')) {
+        setError(`${errorMessage}\n\nTo fix this: Run "npm run dev:full" instead of "npm run dev" to start both frontend and backend.`)
+      } else {
+        setError(errorMessage)
+      }
+      
       setOtpStep('idle')
     }
   }

@@ -295,9 +295,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       })
 
-      const data = await response.json()
+      // Check if response is ok and has content
+      if (!response.ok) {
+        if (response.status === 500) {
+          throw new Error('Backend server is not running. Please start the server to use OTP authentication.')
+        }
+        throw new Error(`Server error: ${response.status} ${response.statusText}`)
+      }
 
-      if (!response.ok || !data.success) {
+      // Check if response has content before parsing JSON
+      const responseText = await response.text()
+      if (!responseText.trim()) {
+        throw new Error('Empty response from server')
+      }
+
+      let data
+      try {
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        throw new Error('Invalid JSON response from server')
+      }
+
+      if (!data.success) {
         throw new Error(data.error || 'Failed to send OTP')
       }
 
